@@ -1,11 +1,13 @@
 import PublicLayout from '@/components/layout/PublicLayout';
-import { mockAchievements } from '@/data/mockData';
+import { useAchievements } from '@/hooks/useSupabaseData';
 import { motion } from 'framer-motion';
 import { Trophy } from 'lucide-react';
 
 const fadeUp = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.5 } };
 
 export default function AchievementsPage() {
+  const { data: achievements } = useAchievements();
+
   return (
     <PublicLayout>
       <section className="section-padding">
@@ -15,7 +17,7 @@ export default function AchievementsPage() {
             <p className="text-muted-foreground text-lg">Milestones that define our excellence</p>
           </motion.div>
           <div className="max-w-3xl mx-auto space-y-6">
-            {mockAchievements.map((a, i) => (
+            {(achievements || []).map((a, i) => (
               <motion.div key={a.id} {...fadeUp} transition={{ delay: i * 0.05 }} className="card-matte p-6 hover:shadow-lift transition-shadow">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">

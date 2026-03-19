@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import PublicLayout from '@/components/layout/PublicLayout';
-import { mockResults } from '@/data/mockData';
+import { useResults, initials } from '@/hooks/useSupabaseData';
 import { motion } from 'framer-motion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trophy, Users, BarChart3 } from 'lucide-react';
@@ -9,11 +9,8 @@ const fadeUp = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0
 
 const classes = ['6th', '7th', '8th', '9th', '10th'];
 const examTypes: Record<string, string[]> = {
-  '6th': ['1st Semester', '2nd Semester'],
-  '7th': ['1st Semester', '2nd Semester'],
-  '8th': ['1st Semester', '2nd Semester'],
-  '9th': ['Annual-I', 'Annual-II'],
-  '10th': ['Annual-I', 'Annual-II'],
+  '6th': ['1st Semester', '2nd Semester'], '7th': ['1st Semester', '2nd Semester'], '8th': ['1st Semester', '2nd Semester'],
+  '9th': ['Annual-I', 'Annual-II'], '10th': ['Annual-I', 'Annual-II'],
 };
 
 function PositionBadge({ position }: { position: number }) {
@@ -26,14 +23,11 @@ function PositionBadge({ position }: { position: number }) {
 export default function ResultsPage() {
   const [selectedClass, setSelectedClass] = useState('10th');
   const [selectedExam, setSelectedExam] = useState('Annual-I');
+  const { data: results, isLoading } = useResults(selectedClass, selectedExam);
 
-  const filtered = useMemo(() => {
-    return mockResults.filter(r => r.className === selectedClass && r.examType === selectedExam)
-      .sort((a, b) => a.position - b.position);
-  }, [selectedClass, selectedExam]);
-
+  const filtered = results || [];
   const totalStudents = filtered.length;
-  const passed = filtered.filter(r => r.percentage >= 33).length;
+  const passed = filtered.filter(r => Number(r.percentage) >= 33).length;
   const passPercentage = totalStudents > 0 ? ((passed / totalStudents) * 100).toFixed(1) : '0';
 
   return (
@@ -44,24 +38,16 @@ export default function ResultsPage() {
             <h1 className="text-4xl font-display font-extrabold mb-4">Examination Results</h1>
             <p className="text-muted-foreground text-lg">View class-wise examination results</p>
           </motion.div>
-
-          {/* Filters */}
           <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
             <Select value={selectedClass} onValueChange={(v) => { setSelectedClass(v); setSelectedExam(examTypes[v][0]); }}>
               <SelectTrigger className="w-40"><SelectValue placeholder="Select Class" /></SelectTrigger>
-              <SelectContent>
-                {classes.map(c => <SelectItem key={c} value={c}>Class {c}</SelectItem>)}
-              </SelectContent>
+              <SelectContent>{classes.map(c => <SelectItem key={c} value={c}>Class {c}</SelectItem>)}</SelectContent>
             </Select>
             <Select value={selectedExam} onValueChange={setSelectedExam}>
               <SelectTrigger className="w-48"><SelectValue placeholder="Select Exam" /></SelectTrigger>
-              <SelectContent>
-                {examTypes[selectedClass].map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-              </SelectContent>
+              <SelectContent>{examTypes[selectedClass].map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto mb-10">
             {[
               { icon: Users, label: 'Total Students', value: totalStudents },
@@ -75,8 +61,6 @@ export default function ResultsPage() {
               </motion.div>
             ))}
           </div>
-
-          {/* Results Table */}
           {filtered.length > 0 ? (
             <motion.div {...fadeUp} className="card-matte overflow-hidden">
               <div className="overflow-x-auto">
@@ -97,16 +81,16 @@ export default function ResultsPage() {
                         <td className="px-6 py-4"><PositionBadge position={r.position} /></td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">{r.initials}</div>
+                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">{initials(r.name)}</div>
                             <span className="font-medium text-sm">{r.name}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground tabular-nums">{r.rollNumber}</td>
-                        <td className="px-6 py-4 text-sm text-right font-medium tabular-nums">{r.obtainedMarks}</td>
-                        <td className="px-6 py-4 text-sm text-right text-muted-foreground tabular-nums">{r.totalMarks}</td>
+                        <td className="px-6 py-4 text-sm text-muted-foreground tabular-nums">{r.roll_number}</td>
+                        <td className="px-6 py-4 text-sm text-right font-medium tabular-nums">{r.obtained_marks}</td>
+                        <td className="px-6 py-4 text-sm text-right text-muted-foreground tabular-nums">{r.total_marks}</td>
                         <td className="px-6 py-4 text-right">
-                          <span className={`text-sm font-semibold tabular-nums ${r.percentage >= 80 ? 'text-primary' : r.percentage >= 60 ? 'text-gold' : 'text-muted-foreground'}`}>
-                            {r.percentage.toFixed(1)}%
+                          <span className={`text-sm font-semibold tabular-nums ${Number(r.percentage) >= 80 ? 'text-primary' : Number(r.percentage) >= 60 ? 'text-gold' : 'text-muted-foreground'}`}>
+                            {Number(r.percentage).toFixed(1)}%
                           </span>
                         </td>
                       </tr>
@@ -118,7 +102,7 @@ export default function ResultsPage() {
           ) : (
             <div className="card-matte p-12 text-center">
               <BarChart3 className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-              <p className="text-muted-foreground">No results available for this selection.</p>
+              <p className="text-muted-foreground">{isLoading ? 'Loading results...' : 'No results available for this selection.'}</p>
             </div>
           )}
         </div>

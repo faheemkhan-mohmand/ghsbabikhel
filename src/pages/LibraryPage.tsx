@@ -1,5 +1,5 @@
 import PublicLayout from '@/components/layout/PublicLayout';
-import { mockLibrary } from '@/data/mockData';
+import { useLibrary } from '@/hooks/useSupabaseData';
 import { motion } from 'framer-motion';
 import { FileText, FileIcon, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,8 +10,9 @@ const fadeUp = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0
 
 export default function LibraryPage() {
   const [filter, setFilter] = useState('all');
-
-  const filtered = filter === 'all' ? mockLibrary : mockLibrary.filter(item => item.category === filter);
+  const { data: library } = useLibrary();
+  const items = library || [];
+  const filtered = filter === 'all' ? items : items.filter(item => item.category === filter);
 
   return (
     <PublicLayout>
@@ -36,20 +37,24 @@ export default function LibraryPage() {
             {filtered.map((item, i) => (
               <motion.div key={item.id} {...fadeUp} transition={{ delay: i * 0.05 }} className="card-matte p-6 hover:shadow-lift transition-shadow">
                 <div className="flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${item.fileType === 'pdf' ? 'bg-destructive/10' : 'bg-primary/10'}`}>
-                    {item.fileType === 'pdf' ? <FileText className="w-5 h-5 text-destructive" /> : <FileIcon className="w-5 h-5 text-primary" />}
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${item.file_type === 'pdf' ? 'bg-destructive/10' : 'bg-primary/10'}`}>
+                    {item.file_type === 'pdf' ? <FileText className="w-5 h-5 text-destructive" /> : <FileIcon className="w-5 h-5 text-primary" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-display font-semibold text-sm">{item.title}</h3>
                     <div className="flex flex-wrap gap-2 mt-2">
                       <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{item.subject}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Class {item.classLevel}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-accent text-accent-foreground uppercase">{item.fileType}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Class {item.class_level}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-accent text-accent-foreground uppercase">{item.file_type}</span>
                     </div>
                     <div className="mt-4">
-                      <Button size="sm" variant="outline" className="btn-press gap-1 text-xs">
-                        <Download className="w-3 h-3" /> Download
-                      </Button>
+                      {item.file_url ? (
+                        <a href={item.file_url} target="_blank" rel="noopener noreferrer">
+                          <Button size="sm" variant="outline" className="btn-press gap-1 text-xs"><Download className="w-3 h-3" /> Download</Button>
+                        </a>
+                      ) : (
+                        <Button size="sm" variant="outline" className="btn-press gap-1 text-xs" disabled><Download className="w-3 h-3" /> No file</Button>
+                      )}
                     </div>
                   </div>
                 </div>
