@@ -389,18 +389,15 @@ export function useMutateResult() {
   const qc = useQueryClient();
   const upsert = useMutation({
     mutationFn: async (result: Partial<StudentResult> & { id?: string }) => {
-      // Auto-calc percentage
-      const obtained = result.obtained_marks || 0;
-      const total = result.total_marks || 1;
-      const percentage = (obtained / total) * 100;
-      const payload = { ...result, percentage };
+      // percentage is a generated column - don't send it
+      const { percentage, position, ...rest } = result as any;
 
-      if (result.id) {
-        const { error } = await supabase.from('results').update(payload).eq('id', result.id);
+      if (rest.id) {
+        const { id, ...updatePayload } = rest;
+        const { error } = await supabase.from('results').update(updatePayload).eq('id', id);
         if (error) throw error;
       } else {
-        // Don't send id for insert (let DB generate it)
-        const { id, position, ...insertPayload } = payload as any;
+        const { id, ...insertPayload } = rest;
         const { error } = await supabase.from('results').insert(insertPayload);
         if (error) throw error;
       }
