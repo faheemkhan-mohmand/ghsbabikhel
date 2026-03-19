@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { mockAlbums, Album } from '@/data/mockData';
+import { useAlbums, useMutateAlbum, uploadFile, Album } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,24 +9,31 @@ import { Plus, Pencil, Trash2, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminGallery() {
-  const [albums, setAlbums] = useState<Album[]>(mockAlbums);
+  const { data: albums } = useAlbums();
+  const { upsert, remove } = useMutateAlbum();
   const [editing, setEditing] = useState<Album | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({ name: '', description: '' });
+  const [coverFile, setCoverFile] = useState<File | null>(null);
 
-  const openAdd = () => { setEditing(null); setForm({ name: '', description: '' }); setIsOpen(true); };
-  const openEdit = (a: Album) => { setEditing(a); setForm({ name: a.name, description: a.description }); setIsOpen(true); };
+  const openAdd = () => { setEditing(null); setForm({ name: '', description: '' }); setCoverFile(null); setIsOpen(true); };
+  const openEdit = (a: Album) => { setEditing(a); setForm({ name: a.name, description: a.description || '' }); setCoverFile(null); setIsOpen(true); };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name) return;
-    if (editing) {
-      setAlbums(prev => prev.map(a => a.id === editing.id ? { ...a, ...form } : a));
-      toast.success('Album updated');
-    } else {
-      setAlbums(prev => [...prev, { id: Date.now().toString(), ...form, coverImage: '', images: [] }]);
-      toast.success('Album created');
-    }
-    setIsOpen(false);
+    try {
+      let cover_image_url = editing?.cover_image_url;
+      if (coverFile) {
+        cover_image_url = await uploadFile('gallery', `covers/${Date.now()}_${coverFile.name}`, coverFile);
+      }
+      await upsert.mutateAsync({ ...form, cover_image_url, ...(editing ? { id: editing.id } : {}) });
+      toast.success(editing ? 'Album updated' : 'Album created');
+      setIsOpen(false);
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleDelete = async (id: string) => {
+    try { await remove.mutateAsync(id); toast.success('Deleted'); } catch (e: any) { toast.error(e.message); }
   };
 
   return (
@@ -34,7 +41,7 @@ export default function AdminGallery() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-display font-bold">Manage Gallery</h1>
-          <p className="text-sm text-muted-foreground">{albums.length} albums</p>
+          <p className="text-sm text-muted-foreground">{albums?.length || 0} albums</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
@@ -45,17 +52,21 @@ export default function AdminGallery() {
             <div className="space-y-4">
               <div><Label>Album Name</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="mt-1" /></div>
               <div><Label>Description</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="mt-1" /></div>
-              <p className="text-xs text-muted-foreground">Image upload will be available with Supabase Storage integration.</p>
-              <Button onClick={handleSave} className="w-full btn-press">Save</Button>
+              <div><Label>Cover Image</Label><Input type="file" accept="image/*" onChange={e => setCoverFile(e.target.files?.[0] || null)} className="mt-1" /></div>
+              <Button onClick={handleSave} className="w-full btn-press" disabled={upsert.isPending}>{upsert.isPending ? 'Saving...' : 'Save'}</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {albums.map(album => (
+        {(albums || []).map(album => (
           <div key={album.id} className="card-matte overflow-hidden">
             <div className="aspect-video bg-muted flex items-center justify-center">
-              <ImageIcon className="w-10 h-10 text-muted-foreground/20" />
+              {album.cover_image_url ? (
+                <img src={album.cover_image_url} alt={album.name} className="w-full h-full object-cover" />
+              ) : (
+                <ImageIcon className="w-10 h-10 text-muted-foreground/20" />
+              )}
             </div>
             <div className="p-4 flex items-start justify-between">
               <div>
@@ -64,7 +75,7 @@ export default function AdminGallery() {
               </div>
               <div className="flex gap-1 shrink-0">
                 <Button variant="ghost" size="sm" onClick={() => openEdit(album)}><Pencil className="w-3.5 h-3.5" /></Button>
-                <Button variant="ghost" size="sm" onClick={() => { setAlbums(p => p.filter(x => x.id !== album.id)); toast.success('Deleted'); }} className="text-destructive hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
+                <Button variant="ghost" size="sm" onClick={() => handleDelete(album.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
               </div>
             </div>
           </div>

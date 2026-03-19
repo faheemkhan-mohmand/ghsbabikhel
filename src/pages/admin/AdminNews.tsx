@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { mockNews, NewsItem } from '@/data/mockData';
+import { useNews, useMutateNews, NewsItem } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,8 @@ import { Plus, Pencil, Trash2, Newspaper } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminNews() {
-  const [news, setNews] = useState<NewsItem[]>(mockNews);
+  const { data: news } = useNews();
+  const { upsert, remove } = useMutateNews();
   const [editing, setEditing] = useState<NewsItem | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({ title: '', excerpt: '', content: '' });
@@ -18,16 +19,21 @@ export default function AdminNews() {
   const openAdd = () => { setEditing(null); setForm({ title: '', excerpt: '', content: '' }); setIsOpen(true); };
   const openEdit = (n: NewsItem) => { setEditing(n); setForm({ title: n.title, excerpt: n.excerpt, content: n.content }); setIsOpen(true); };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title) return;
-    if (editing) {
-      setNews(prev => prev.map(n => n.id === editing.id ? { ...n, ...form } : n));
-      toast.success('News updated');
-    } else {
-      setNews(prev => [{ id: Date.now().toString(), ...form, date: new Date().toISOString().split('T')[0] }, ...prev]);
-      toast.success('News added');
-    }
-    setIsOpen(false);
+    try {
+      await upsert.mutateAsync({
+        ...form,
+        date: editing?.date || new Date().toISOString().split('T')[0],
+        ...(editing ? { id: editing.id } : {}),
+      });
+      toast.success(editing ? 'News updated' : 'News added');
+      setIsOpen(false);
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleDelete = async (id: string) => {
+    try { await remove.mutateAsync(id); toast.success('Deleted'); } catch (e: any) { toast.error(e.message); }
   };
 
   return (
@@ -35,7 +41,7 @@ export default function AdminNews() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-display font-bold">Manage News</h1>
-          <p className="text-sm text-muted-foreground">{news.length} articles</p>
+          <p className="text-sm text-muted-foreground">{news?.length || 0} articles</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
@@ -47,13 +53,13 @@ export default function AdminNews() {
               <div><Label>Title</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className="mt-1" /></div>
               <div><Label>Excerpt</Label><Input value={form.excerpt} onChange={e => setForm(f => ({ ...f, excerpt: e.target.value }))} className="mt-1" /></div>
               <div><Label>Content</Label><Textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} className="mt-1" rows={4} /></div>
-              <Button onClick={handleSave} className="w-full btn-press">Save</Button>
+              <Button onClick={handleSave} className="w-full btn-press" disabled={upsert.isPending}>{upsert.isPending ? 'Saving...' : 'Save'}</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
-        {news.map(n => (
+        {(news || []).map(n => (
           <div key={n.id} className="card-matte p-5">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -62,7 +68,7 @@ export default function AdminNews() {
               </div>
               <div className="flex gap-1">
                 <Button variant="ghost" size="sm" onClick={() => openEdit(n)}><Pencil className="w-3.5 h-3.5" /></Button>
-                <Button variant="ghost" size="sm" onClick={() => { setNews(p => p.filter(x => x.id !== n.id)); toast.success('Deleted'); }} className="text-destructive hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
+                <Button variant="ghost" size="sm" onClick={() => handleDelete(n.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
               </div>
             </div>
             <h3 className="font-display font-semibold text-sm">{n.title}</h3>

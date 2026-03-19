@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { mockTeachers, Teacher } from '@/data/mockData';
+import { useTeachers, useMutateTeacher, initials, uploadFile, Teacher } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,39 +9,31 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminTeachers() {
-  const [teachers, setTeachers] = useState<Teacher[]>(mockTeachers);
-  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const { data: teachers, isLoading } = useTeachers();
+  const { upsert, remove } = useMutateTeacher();
+  const [editing, setEditing] = useState<Teacher | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({ name: '', subject: '', qualification: '', experience: '' });
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
-  const openAdd = () => {
-    setEditingTeacher(null);
-    setForm({ name: '', subject: '', qualification: '', experience: '' });
-    setIsOpen(true);
-  };
+  const openAdd = () => { setEditing(null); setForm({ name: '', subject: '', qualification: '', experience: '' }); setPhotoFile(null); setIsOpen(true); };
+  const openEdit = (t: Teacher) => { setEditing(t); setForm({ name: t.name, subject: t.subject, qualification: t.qualification || '', experience: t.experience || '' }); setPhotoFile(null); setIsOpen(true); };
 
-  const openEdit = (t: Teacher) => {
-    setEditingTeacher(t);
-    setForm({ name: t.name, subject: t.subject, qualification: t.qualification, experience: t.experience });
-    setIsOpen(true);
-  };
-
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name || !form.subject) return;
-    if (editingTeacher) {
-      setTeachers(prev => prev.map(t => t.id === editingTeacher.id ? { ...t, ...form, initials: form.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() } : t));
-      toast.success('Teacher updated');
-    } else {
-      const newTeacher: Teacher = { id: Date.now().toString(), ...form, initials: form.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() };
-      setTeachers(prev => [...prev, newTeacher]);
-      toast.success('Teacher added');
-    }
-    setIsOpen(false);
+    try {
+      let photo_url = editing?.photo_url;
+      if (photoFile) {
+        photo_url = await uploadFile('photos', `teachers/${Date.now()}_${photoFile.name}`, photoFile);
+      }
+      await upsert.mutateAsync({ ...form, photo_url, ...(editing ? { id: editing.id } : {}) });
+      toast.success(editing ? 'Teacher updated' : 'Teacher added');
+      setIsOpen(false);
+    } catch (e: any) { toast.error(e.message); }
   };
 
-  const handleDelete = (id: string) => {
-    setTeachers(prev => prev.filter(t => t.id !== id));
-    toast.success('Teacher removed');
+  const handleDelete = async (id: string) => {
+    try { await remove.mutateAsync(id); toast.success('Teacher removed'); } catch (e: any) { toast.error(e.message); }
   };
 
   return (
@@ -49,20 +41,21 @@ export default function AdminTeachers() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-display font-bold">Manage Teachers</h1>
-          <p className="text-sm text-muted-foreground">{teachers.length} educators</p>
+          <p className="text-sm text-muted-foreground">{teachers?.length || 0} educators</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button className="btn-press gap-1" onClick={openAdd}><Plus className="w-4 h-4" /> Add Teacher</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>{editingTeacher ? 'Edit Teacher' : 'Add Teacher'}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editing ? 'Edit Teacher' : 'Add Teacher'}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div><Label>Name</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="mt-1" /></div>
               <div><Label>Subject</Label><Input value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} className="mt-1" /></div>
               <div><Label>Qualification</Label><Input value={form.qualification} onChange={e => setForm(f => ({ ...f, qualification: e.target.value }))} className="mt-1" /></div>
               <div><Label>Experience</Label><Input value={form.experience} onChange={e => setForm(f => ({ ...f, experience: e.target.value }))} className="mt-1" /></div>
-              <Button onClick={handleSave} className="w-full btn-press">Save</Button>
+              <div><Label>Photo</Label><Input type="file" accept="image/*" onChange={e => setPhotoFile(e.target.files?.[0] || null)} className="mt-1" /></div>
+              <Button onClick={handleSave} className="w-full btn-press" disabled={upsert.isPending}>{upsert.isPending ? 'Saving...' : 'Save'}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -80,10 +73,14 @@ export default function AdminTeachers() {
               </tr>
             </thead>
             <tbody>
-              {teachers.map(t => (
+              {(teachers || []).map(t => (
                 <tr key={t.id} className="border-b border-border last:border-0 hover:bg-muted/30">
                   <td className="px-4 py-3 flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">{t.initials}</div>
+                    {t.photo_url ? (
+                      <img src={t.photo_url} alt={t.name} className="w-7 h-7 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">{initials(t.name)}</div>
+                    )}
                     <span className="font-medium">{t.name}</span>
                   </td>
                   <td className="px-4 py-3 text-primary font-medium">{t.subject}</td>
