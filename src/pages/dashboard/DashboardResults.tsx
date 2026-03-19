@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { mockResults } from '@/data/mockData';
+import { useResults, initials } from '@/hooks/useSupabaseData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trophy, Users, BarChart3 } from 'lucide-react';
 
@@ -20,14 +20,11 @@ function PositionBadge({ position }: { position: number }) {
 export default function DashboardResults() {
   const [selectedClass, setSelectedClass] = useState('10th');
   const [selectedExam, setSelectedExam] = useState('Annual-I');
+  const { data: results, isLoading } = useResults(selectedClass, selectedExam);
 
-  const filtered = useMemo(() =>
-    mockResults.filter(r => r.className === selectedClass && r.examType === selectedExam).sort((a, b) => a.position - b.position),
-    [selectedClass, selectedExam]
-  );
-
+  const filtered = results || [];
   const totalStudents = filtered.length;
-  const passed = filtered.filter(r => r.percentage >= 33).length;
+  const passed = filtered.filter(r => Number(r.percentage) >= 33).length;
 
   return (
     <DashboardLayout>
@@ -71,12 +68,12 @@ export default function DashboardResults() {
                 <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/30">
                   <td className="px-4 py-3"><PositionBadge position={r.position} /></td>
                   <td className="px-4 py-3 flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">{r.initials}</div>
+                    <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">{initials(r.name)}</div>
                     <span className="font-medium">{r.name}</span>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground tabular-nums">{r.rollNumber}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{r.obtainedMarks}/{r.totalMarks}</td>
-                  <td className="px-4 py-3 text-right font-semibold tabular-nums">{r.percentage.toFixed(1)}%</td>
+                  <td className="px-4 py-3 text-muted-foreground tabular-nums">{r.roll_number}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{r.obtained_marks}/{r.total_marks}</td>
+                  <td className="px-4 py-3 text-right font-semibold tabular-nums">{Number(r.percentage).toFixed(1)}%</td>
                 </tr>
               ))}
             </tbody>

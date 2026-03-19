@@ -1,8 +1,10 @@
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { mockNotices } from '@/data/mockData';
+import { useNotices } from '@/hooks/useSupabaseData';
 import { Bell } from 'lucide-react';
 
 export default function DashboardNotices() {
+  const { data: notices } = useNotices();
+
   return (
     <DashboardLayout>
       <div className="mb-6">
@@ -10,7 +12,7 @@ export default function DashboardNotices() {
         <p className="text-sm text-muted-foreground">School announcements</p>
       </div>
       <div className="space-y-4">
-        {mockNotices.map(notice => (
+        {(notices || []).map(notice => (
           <div key={notice.id} className="card-matte p-5">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">

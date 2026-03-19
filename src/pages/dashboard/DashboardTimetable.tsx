@@ -1,13 +1,27 @@
 import { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { mockTimetables } from '@/data/mockData';
+import { useTimetable } from '@/hooks/useSupabaseData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const classes = ['6th', '7th', '8th', '9th', '10th'];
+const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default function DashboardTimetable() {
   const [selectedClass, setSelectedClass] = useState('6th');
-  const timetable = useMemo(() => mockTimetables[selectedClass] || [], [selectedClass]);
+  const { data: entries, isLoading } = useTimetable(selectedClass);
+
+  const periods = useMemo(() => {
+    if (!entries || entries.length === 0) return [];
+    const uniquePeriods = [...new Set(entries.map(e => e.period))].sort((a, b) => a - b);
+    return uniquePeriods.map(p => {
+      const entry = entries.find(e => e.period === p);
+      return { period: p, time: entry?.time || '' };
+    });
+  }, [entries]);
+
+  const getEntry = (day: string, period: number) => {
+    return entries?.find(e => e.day === day && e.period === period);
+  };
 
   return (
     <DashboardLayout>
@@ -18,41 +32,48 @@ export default function DashboardTimetable() {
         </div>
         <Select value={selectedClass} onValueChange={setSelectedClass}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {classes.map(c => <SelectItem key={c} value={c}>Class {c}</SelectItem>)}
-          </SelectContent>
+          <SelectContent>{classes.map(c => <SelectItem key={c} value={c}>Class {c}</SelectItem>)}</SelectContent>
         </Select>
       </div>
-      <div className="card-matte overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/50 border-b border-border">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Day</th>
-                {timetable[0]?.entries.map((e) => (
-                  <th key={e.period} className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">
-                    <div>P{e.period}</div>
-                    <div className="font-normal text-[10px] mt-0.5">{e.time}</div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {timetable.map((day) => (
-                <tr key={day.day} className="border-b border-border last:border-0 hover:bg-muted/30">
-                  <td className="px-4 py-3 font-medium whitespace-nowrap">{day.day}</td>
-                  {day.entries.map((entry) => (
-                    <td key={entry.period} className={`px-3 py-3 text-center ${entry.subject === 'Break' ? 'bg-muted/50 text-muted-foreground italic' : ''}`}>
-                      <div className="font-medium text-xs">{entry.subject}</div>
-                      {entry.teacher !== '-' && <div className="text-[10px] text-muted-foreground mt-0.5">{entry.teacher}</div>}
-                    </td>
+      {isLoading ? (
+        <div className="card-matte p-12 text-center text-muted-foreground">Loading timetable...</div>
+      ) : periods.length === 0 ? (
+        <div className="card-matte p-12 text-center text-muted-foreground">No timetable available for this class.</div>
+      ) : (
+        <div className="card-matte overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/50 border-b border-border">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Day</th>
+                  {periods.map(p => (
+                    <th key={p.period} className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">
+                      <div>P{p.period}</div>
+                      <div className="font-normal text-[10px] mt-0.5">{p.time}</div>
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {days.map(day => (
+                  <tr key={day} className="border-b border-border last:border-0 hover:bg-muted/30">
+                    <td className="px-4 py-3 font-medium whitespace-nowrap">{day}</td>
+                    {periods.map(p => {
+                      const entry = getEntry(day, p.period);
+                      return (
+                        <td key={p.period} className={`px-3 py-3 text-center ${entry?.subject === 'Break' ? 'bg-muted/50 text-muted-foreground italic' : ''}`}>
+                          <div className="font-medium text-xs">{entry?.subject || '-'}</div>
+                          {entry?.teacher && entry.teacher !== '-' && <div className="text-[10px] text-muted-foreground mt-0.5">{entry.teacher}</div>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </DashboardLayout>
   );
 }
