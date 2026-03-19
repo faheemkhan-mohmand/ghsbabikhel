@@ -66,11 +66,6 @@ export default function Login() {
           <p className="text-center text-sm text-muted-foreground mt-6">
             Don't have an account? <Link to="/signup" className="text-primary font-medium hover:underline">Sign Up</Link>
           </p>
-          <div className="mt-6 p-4 rounded-lg bg-muted/50 text-xs text-muted-foreground">
-            <p className="font-semibold mb-1">Demo Credentials:</p>
-            <p>Admin: admin@ghsbabikhel.edu.pk / admin123</p>
-            <p>User: user@ghsbabikhel.edu.pk / user123</p>
-          </div>
         </div>
       </div>
     </div>

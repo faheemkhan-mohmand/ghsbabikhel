@@ -1,8 +1,10 @@
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { mockAchievements } from '@/data/mockData';
+import { useAchievements } from '@/hooks/useSupabaseData';
 import { Trophy } from 'lucide-react';
 
 export default function DashboardAchievements() {
+  const { data: achievements } = useAchievements();
+
   return (
     <DashboardLayout>
       <div className="mb-6">
@@ -10,7 +12,7 @@ export default function DashboardAchievements() {
         <p className="text-sm text-muted-foreground">School milestones</p>
       </div>
       <div className="space-y-4">
-        {mockAchievements.map(a => (
+        {(achievements || []).map(a => (
           <div key={a.id} className="card-matte p-5 hover:shadow-lift transition-shadow">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">

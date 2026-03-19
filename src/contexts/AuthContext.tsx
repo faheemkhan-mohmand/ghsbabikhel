@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { supabase } from '@/lib/supabase';
+import type { User, Session } from '@supabase/supabase-js';
 
 export type UserRole = 'admin' | 'user';
 
@@ -14,49 +16,85 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demo - will be replaced with Supabase
-const MOCK_USERS: Record<string, { password: string; user: AuthUser }> = {
-  'admin@ghsbabikhel.edu.pk': {
-    password: 'admin123',
-    user: { id: '1', email: 'admin@ghsbabikhel.edu.pk', name: 'Admin', role: 'admin' },
-  },
-  'user@ghsbabikhel.edu.pk': {
-    password: 'user123',
-    user: { id: '2', email: 'user@ghsbabikhel.edu.pk', name: 'Student User', role: 'user' },
-  },
-};
+async function fetchUserRole(userId: string): Promise<UserRole> {
+  const { data } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId)
+    .single();
+  return (data?.role as UserRole) || 'user';
+}
+
+async function buildAuthUser(user: User): Promise<AuthUser> {
+  const role = await fetchUserRole(user.id);
+  return {
+    id: user.id,
+    email: user.email || '',
+    name: user.user_metadata?.name || user.email?.split('@')[0] || '',
+    role,
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    const stored = localStorage.getItem('ghs_user');
-    return stored ? JSON.parse(stored) : null;
-  });
-  const [isLoading] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          // Use setTimeout to avoid Supabase deadlock
+          setTimeout(async () => {
+            const authUser = await buildAuthUser(session.user);
+            setUser(authUser);
+            setIsLoading(false);
+          }, 0);
+        } else {
+          setUser(null);
+          setIsLoading(false);
+        }
+      }
+    );
+
+    // THEN check existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const authUser = await buildAuthUser(session.user);
+        setUser(authUser);
+      }
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const mockUser = MOCK_USERS[email];
-    if (mockUser && mockUser.password === password) {
-      setUser(mockUser.user);
-      localStorage.setItem('ghs_user', JSON.stringify(mockUser.user));
-    } else {
-      throw new Error('Invalid email or password');
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
+  }, []);
+
+  const signUp = useCallback(async (email: string, password: string, name: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } },
+    });
+    if (error) throw new Error(error.message);
+    // Insert default role
+    if (data.user) {
+      await supabase.from('user_roles').insert({ user_id: data.user.id, role: 'user' });
     }
   }, []);
 
-  const signUp = useCallback(async (email: string, _password: string, name: string) => {
-    const newUser: AuthUser = { id: Date.now().toString(), email, name, role: 'user' };
-    setUser(newUser);
-    localStorage.setItem('ghs_user', JSON.stringify(newUser));
-  }, []);
-
-  const signOut = useCallback(() => {
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('ghs_user');
   }, []);
 
   return (

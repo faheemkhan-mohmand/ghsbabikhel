@@ -3,14 +3,8 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Users, Award, BookOpen, GraduationCap, Clock, Bell, Newspaper, Image as ImageIcon, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PublicLayout from '@/components/layout/PublicLayout';
-import { schoolInfo, mockNotices, mockNews, mockTeachers, mockAchievements } from '@/data/mockData';
-
-const stats = [
-  { label: 'Students', value: `${schoolInfo.totalStudents}+`, icon: Users },
-  { label: 'Pass Rate', value: `${schoolInfo.passRate}%`, icon: Award },
-  { label: 'Educators', value: `${schoolInfo.totalTeachers}`, icon: BookOpen },
-  { label: 'Established', value: `${schoolInfo.established}`, icon: Clock },
-];
+import { useSchoolInfo, useNotices, useNews, useTeachers, useAchievements, initials } from '@/hooks/useSupabaseData';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const fadeUp = {
   initial: { opacity: 0, y: 20 },
@@ -20,6 +14,21 @@ const fadeUp = {
 };
 
 export default function Index() {
+  const { data: schoolInfo } = useSchoolInfo();
+  const { data: notices } = useNotices();
+  const { data: news } = useNews();
+  const { data: teachers } = useTeachers();
+  const { data: achievements } = useAchievements();
+
+  const si = schoolInfo || { name: 'GHS Babi Khel', fullName: '', description: '', totalStudents: 0, passRate: 0, totalTeachers: 0, established: 1985, total_students: 0, pass_rate: 0, total_teachers: 0 };
+
+  const stats = [
+    { label: 'Students', value: `${si.total_students || 0}+`, icon: Users },
+    { label: 'Pass Rate', value: `${si.pass_rate || 0}%`, icon: Award },
+    { label: 'Educators', value: `${si.total_teachers || 0}`, icon: BookOpen },
+    { label: 'Established', value: `${si.established || 1985}`, icon: Clock },
+  ];
+
   return (
     <PublicLayout>
       {/* Hero */}
@@ -29,10 +38,10 @@ export default function Index() {
             <motion.div {...fadeUp}>
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
                 <GraduationCap className="w-4 h-4" />
-                Est. {schoolInfo.established}
+                Est. {si.established}
               </span>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-extrabold text-foreground leading-[1.1] mb-6">
-                {schoolInfo.name}:
+                {si.name}:
                 <br />
                 <span className="text-primary">Excellence in Every Endeavor</span>
               </h1>
@@ -41,9 +50,7 @@ export default function Index() {
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link to="/results">
-                  <Button size="lg" className="btn-press gap-2">
-                    View Results <ArrowRight className="w-4 h-4" />
-                  </Button>
+                  <Button size="lg" className="btn-press gap-2">View Results <ArrowRight className="w-4 h-4" /></Button>
                 </Link>
                 <Link to="/about">
                   <Button size="lg" variant="outline" className="btn-press">Learn More</Button>
@@ -85,12 +92,8 @@ export default function Index() {
         <div className="container-main">
           <motion.div {...fadeUp} className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">About Our School</h2>
-            <p className="text-muted-foreground text-lg leading-relaxed mb-8">{schoolInfo.description}</p>
-            <Link to="/about">
-              <Button variant="outline" className="btn-press gap-2">
-                Read More <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
+            <p className="text-muted-foreground text-lg leading-relaxed mb-8">{si.description}</p>
+            <Link to="/about"><Button variant="outline" className="btn-press gap-2">Read More <ArrowRight className="w-4 h-4" /></Button></Link>
           </motion.div>
         </div>
       </section>
@@ -106,7 +109,7 @@ export default function Index() {
             <Link to="/notices"><Button variant="ghost" className="gap-1">View All <ArrowRight className="w-4 h-4" /></Button></Link>
           </motion.div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockNotices.slice(0, 3).map((notice, i) => (
+            {(notices || []).slice(0, 3).map((notice, i) => (
               <motion.div key={notice.id} {...fadeUp} transition={{ delay: i * 0.1 }} className="card-matte p-6 hover:shadow-lift transition-shadow">
                 <div className="flex items-center gap-2 mb-3">
                   <Bell className="w-4 h-4 text-primary" />
@@ -135,7 +138,7 @@ export default function Index() {
             <Link to="/news"><Button variant="ghost" className="gap-1">View All <ArrowRight className="w-4 h-4" /></Button></Link>
           </motion.div>
           <div className="grid md:grid-cols-2 gap-6">
-            {mockNews.slice(0, 4).map((item, i) => (
+            {(news || []).slice(0, 4).map((item, i) => (
               <motion.div key={item.id} {...fadeUp} transition={{ delay: i * 0.1 }} className="card-matte p-6 hover:shadow-lift transition-shadow">
                 <div className="flex items-center gap-2 mb-3">
                   <Newspaper className="w-4 h-4 text-primary" />
@@ -155,16 +158,20 @@ export default function Index() {
           <motion.div {...fadeUp} className="flex items-center justify-between mb-10">
             <div>
               <h2 className="text-3xl font-display font-bold">Our Educators</h2>
-              <p className="text-muted-foreground mt-1">{schoolInfo.totalTeachers} certified educators</p>
+              <p className="text-muted-foreground mt-1">{si.total_teachers} certified educators</p>
             </div>
             <Link to="/teachers"><Button variant="ghost" className="gap-1">View All <ArrowRight className="w-4 h-4" /></Button></Link>
           </motion.div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {mockTeachers.slice(0, 4).map((teacher, i) => (
+            {(teachers || []).slice(0, 4).map((teacher, i) => (
               <motion.div key={teacher.id} {...fadeUp} transition={{ delay: i * 0.1 }} className="card-matte p-6 text-center hover:shadow-lift transition-shadow">
-                <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4 text-lg font-display font-bold">
-                  {teacher.initials}
-                </div>
+                {teacher.photo_url ? (
+                  <img src={teacher.photo_url} alt={teacher.name} className="w-16 h-16 rounded-full object-cover mx-auto mb-4" />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4 text-lg font-display font-bold">
+                    {initials(teacher.name)}
+                  </div>
+                )}
                 <h3 className="font-display font-semibold text-sm">{teacher.name}</h3>
                 <p className="text-xs text-muted-foreground mt-1">{teacher.subject}</p>
               </motion.div>
@@ -201,7 +208,7 @@ export default function Index() {
             <p className="opacity-80 mt-1">Milestones that define our excellence</p>
           </motion.div>
           <div className="grid md:grid-cols-3 gap-6">
-            {mockAchievements.slice(0, 3).map((a, i) => (
+            {(achievements || []).slice(0, 3).map((a, i) => (
               <motion.div key={a.id} {...fadeUp} transition={{ delay: i * 0.1 }} className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-6 border border-primary-foreground/20">
                 <Trophy className="w-6 h-6 mb-3 opacity-80" />
                 <h3 className="font-display font-semibold mb-2">{a.title}</h3>

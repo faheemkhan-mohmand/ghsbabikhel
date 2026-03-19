@@ -1,11 +1,13 @@
 import PublicLayout from '@/components/layout/PublicLayout';
-import { mockNotices } from '@/data/mockData';
+import { useNotices } from '@/hooks/useSupabaseData';
 import { motion } from 'framer-motion';
 import { Bell } from 'lucide-react';
 
 const fadeUp = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.5 } };
 
 export default function NoticesPage() {
+  const { data: notices, isLoading } = useNotices();
+
   return (
     <PublicLayout>
       <section className="section-padding">
@@ -15,7 +17,7 @@ export default function NoticesPage() {
             <p className="text-muted-foreground text-lg">Important updates from the school</p>
           </motion.div>
           <div className="max-w-3xl mx-auto space-y-4">
-            {mockNotices.map((notice, i) => (
+            {(notices || []).map((notice, i) => (
               <motion.div key={notice.id} {...fadeUp} transition={{ delay: i * 0.05 }} className="card-matte p-6 hover:shadow-lift transition-shadow">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">

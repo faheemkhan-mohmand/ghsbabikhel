@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { mockResults, StudentResult } from '@/data/mockData';
+import { useResults, useMutateResult, initials, StudentResult } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,12 +15,6 @@ const examTypes: Record<string, string[]> = {
   '9th': ['Annual-I', 'Annual-II'], '10th': ['Annual-I', 'Annual-II'],
 };
 
-function recalcPositions(results: StudentResult[], cls: string, exam: string): StudentResult[] {
-  const classResults = results.filter(r => r.className === cls && r.examType === exam).sort((a, b) => b.percentage - a.percentage);
-  const otherResults = results.filter(r => !(r.className === cls && r.examType === exam));
-  return [...otherResults, ...classResults.map((r, i) => ({ ...r, position: i + 1 }))];
-}
-
 function PositionBadge({ position }: { position: number }) {
   if (position === 1) return <span className="badge-gold">🥇 1st</span>;
   if (position === 2) return <span className="badge-silver">🥈 2nd</span>;
@@ -29,47 +23,40 @@ function PositionBadge({ position }: { position: number }) {
 }
 
 export default function AdminResults() {
-  const [results, setResults] = useState<StudentResult[]>(mockResults);
   const [selectedClass, setSelectedClass] = useState('10th');
   const [selectedExam, setSelectedExam] = useState('Annual-I');
+  const { data: results, isLoading } = useResults(selectedClass, selectedExam);
+  const { upsert, remove } = useMutateResult();
   const [editing, setEditing] = useState<StudentResult | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', rollNumber: '', obtainedMarks: '', totalMarks: '' });
+  const [form, setForm] = useState({ name: '', roll_number: '', obtained_marks: '', total_marks: '' });
 
-  const filtered = useMemo(() =>
-    results.filter(r => r.className === selectedClass && r.examType === selectedExam).sort((a, b) => a.position - b.position),
-    [results, selectedClass, selectedExam]
-  );
-
+  const filtered = results || [];
   const totalStudents = filtered.length;
-  const passed = filtered.filter(r => r.percentage >= 33).length;
+  const passed = filtered.filter(r => Number(r.percentage) >= 33).length;
 
-  const openAdd = () => { setEditing(null); setForm({ name: '', rollNumber: '', obtainedMarks: '', totalMarks: '' }); setIsOpen(true); };
-  const openEdit = (r: StudentResult) => { setEditing(r); setForm({ name: r.name, rollNumber: r.rollNumber, obtainedMarks: r.obtainedMarks.toString(), totalMarks: r.totalMarks.toString() }); setIsOpen(true); };
+  const openAdd = () => { setEditing(null); setForm({ name: '', roll_number: '', obtained_marks: '', total_marks: '' }); setIsOpen(true); };
+  const openEdit = (r: StudentResult) => { setEditing(r); setForm({ name: r.name, roll_number: r.roll_number, obtained_marks: r.obtained_marks.toString(), total_marks: r.total_marks.toString() }); setIsOpen(true); };
 
-  const handleSave = () => {
-    if (!form.name || !form.rollNumber) return;
-    const obtained = parseInt(form.obtainedMarks) || 0;
-    const total = parseInt(form.totalMarks) || 0;
-    const percentage = total > 0 ? (obtained / total) * 100 : 0;
-
-    let updated: StudentResult[];
-    if (editing) {
-      updated = results.map(r => r.id === editing.id ? { ...r, name: form.name, rollNumber: form.rollNumber, obtainedMarks: obtained, totalMarks: total, percentage, initials: form.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() } : r);
-    } else {
-      const newResult: StudentResult = { id: Date.now().toString(), name: form.name, rollNumber: form.rollNumber, initials: form.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(), className: selectedClass, examType: selectedExam, obtainedMarks: obtained, totalMarks: total, percentage, position: 0 };
-      updated = [...results, newResult];
-    }
-    setResults(recalcPositions(updated, selectedClass, selectedExam));
-    toast.success(editing ? 'Result updated' : 'Student added');
-    setIsOpen(false);
+  const handleSave = async () => {
+    if (!form.name || !form.roll_number) return;
+    try {
+      await upsert.mutateAsync({
+        name: form.name,
+        roll_number: form.roll_number,
+        obtained_marks: parseInt(form.obtained_marks) || 0,
+        total_marks: parseInt(form.total_marks) || 0,
+        class_name: selectedClass,
+        exam_type: selectedExam,
+        ...(editing ? { id: editing.id } : {}),
+      });
+      toast.success(editing ? 'Result updated' : 'Student added');
+      setIsOpen(false);
+    } catch (e: any) { toast.error(e.message); }
   };
 
-  const handleDelete = (id: string) => {
-    const r = results.find(x => x.id === id);
-    const updated = results.filter(x => x.id !== id);
-    if (r) setResults(recalcPositions(updated, r.className, r.examType));
-    toast.success('Deleted');
+  const handleDelete = async (id: string) => {
+    try { await remove.mutateAsync(id); toast.success('Deleted'); } catch (e: any) { toast.error(e.message); }
   };
 
   return (
@@ -87,14 +74,14 @@ export default function AdminResults() {
             <DialogHeader><DialogTitle>{editing ? 'Edit Result' : 'Add Student Result'}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div><Label>Student Name</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="mt-1" /></div>
-              <div><Label>Roll Number</Label><Input value={form.rollNumber} onChange={e => setForm(f => ({ ...f, rollNumber: e.target.value }))} className="mt-1" /></div>
+              <div><Label>Roll Number</Label><Input value={form.roll_number} onChange={e => setForm(f => ({ ...f, roll_number: e.target.value }))} className="mt-1" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Obtained Marks</Label><Input type="number" value={form.obtainedMarks} onChange={e => setForm(f => ({ ...f, obtainedMarks: e.target.value }))} className="mt-1" /></div>
-                <div><Label>Total Marks</Label><Input type="number" value={form.totalMarks} onChange={e => setForm(f => ({ ...f, totalMarks: e.target.value }))} className="mt-1" /></div>
+                <div><Label>Obtained Marks</Label><Input type="number" value={form.obtained_marks} onChange={e => setForm(f => ({ ...f, obtained_marks: e.target.value }))} className="mt-1" /></div>
+                <div><Label>Total Marks</Label><Input type="number" value={form.total_marks} onChange={e => setForm(f => ({ ...f, total_marks: e.target.value }))} className="mt-1" /></div>
               </div>
               <p className="text-xs text-muted-foreground">Class: {selectedClass} | Exam: {selectedExam}</p>
               <p className="text-xs text-muted-foreground">Percentage and position will be calculated automatically.</p>
-              <Button onClick={handleSave} className="w-full btn-press">Save</Button>
+              <Button onClick={handleSave} className="w-full btn-press" disabled={upsert.isPending}>{upsert.isPending ? 'Saving...' : 'Save'}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -139,12 +126,12 @@ export default function AdminResults() {
                 <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/30">
                   <td className="px-4 py-3"><PositionBadge position={r.position} /></td>
                   <td className="px-4 py-3 flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">{r.initials}</div>
+                    <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">{initials(r.name)}</div>
                     <span className="font-medium">{r.name}</span>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground tabular-nums">{r.rollNumber}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{r.obtainedMarks}/{r.totalMarks}</td>
-                  <td className="px-4 py-3 text-right font-semibold tabular-nums">{r.percentage.toFixed(1)}%</td>
+                  <td className="px-4 py-3 text-muted-foreground tabular-nums">{r.roll_number}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{r.obtained_marks}/{r.total_marks}</td>
+                  <td className="px-4 py-3 text-right font-semibold tabular-nums">{Number(r.percentage).toFixed(1)}%</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Button variant="ghost" size="sm" onClick={() => openEdit(r)}><Pencil className="w-3.5 h-3.5" /></Button>

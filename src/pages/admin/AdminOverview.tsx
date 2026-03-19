@@ -1,16 +1,24 @@
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { schoolInfo, mockTeachers, mockNotices, mockResults, mockLibrary } from '@/data/mockData';
-import { Users, BookOpen, Bell, BarChart3, FileText, Image, Trophy } from 'lucide-react';
-
-const stats = [
-  { label: 'Students', value: `${schoolInfo.totalStudents}+`, icon: Users, color: 'bg-primary/10 text-primary' },
-  { label: 'Teachers', value: mockTeachers.length, icon: BookOpen, color: 'bg-academic-50 text-academic-900' },
-  { label: 'Notices', value: mockNotices.length, icon: Bell, color: 'bg-gold/10 text-gold' },
-  { label: 'Results', value: mockResults.length, icon: BarChart3, color: 'bg-accent text-accent-foreground' },
-  { label: 'Library Items', value: mockLibrary.length, icon: FileText, color: 'bg-destructive/10 text-destructive' },
-];
+import { useTeachers, useNotices, useResults, useLibrary, useSchoolInfo } from '@/hooks/useSupabaseData';
+import { Users, BookOpen, Bell, BarChart3, FileText } from 'lucide-react';
 
 export default function AdminOverview() {
+  const { data: teachers } = useTeachers();
+  const { data: notices } = useNotices();
+  const { data: results } = useResults();
+  const { data: library } = useLibrary();
+  const { data: si } = useSchoolInfo();
+
+  const stats = [
+    { label: 'Students', value: `${si?.total_students || 0}+`, icon: Users, color: 'bg-primary/10 text-primary' },
+    { label: 'Teachers', value: teachers?.length || 0, icon: BookOpen, color: 'bg-academic-50 text-academic-900' },
+    { label: 'Notices', value: notices?.length || 0, icon: Bell, color: 'bg-gold/10 text-gold' },
+    { label: 'Results', value: results?.length || 0, icon: BarChart3, color: 'bg-accent text-accent-foreground' },
+    { label: 'Library Items', value: library?.length || 0, icon: FileText, color: 'bg-destructive/10 text-destructive' },
+  ];
+
+  const topResults = (results || []).filter(r => r.position <= 3 && r.class_name === '10th');
+
   return (
     <DashboardLayout isAdmin>
       <div className="mb-8">
@@ -32,7 +40,7 @@ export default function AdminOverview() {
         <div className="card-matte p-6">
           <h3 className="font-display font-semibold mb-4">Recent Notices</h3>
           <div className="space-y-3">
-            {mockNotices.slice(0, 3).map(n => (
+            {(notices || []).slice(0, 3).map(n => (
               <div key={n.id} className="flex items-center gap-3 text-sm">
                 <Bell className="w-4 h-4 text-primary shrink-0" />
                 <span className="truncate flex-1">{n.title}</span>
@@ -44,11 +52,13 @@ export default function AdminOverview() {
         <div className="card-matte p-6">
           <h3 className="font-display font-semibold mb-4">Top Students</h3>
           <div className="space-y-3">
-            {mockResults.filter(r => r.position <= 3 && r.className === '10th').map(r => (
+            {topResults.map(r => (
               <div key={r.id} className="flex items-center gap-3 text-sm">
-                <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">{r.initials}</div>
+                <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                  {r.name.split(' ').map(w => w[0]).join('').slice(0, 2)}
+                </div>
                 <span className="flex-1">{r.name}</span>
-                <span className="font-semibold tabular-nums">{r.percentage.toFixed(1)}%</span>
+                <span className="font-semibold tabular-nums">{Number(r.percentage).toFixed(1)}%</span>
               </div>
             ))}
           </div>

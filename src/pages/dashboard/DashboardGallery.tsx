@@ -1,8 +1,10 @@
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { mockAlbums } from '@/data/mockData';
+import { useAlbums } from '@/hooks/useSupabaseData';
 import { Image as ImageIcon } from 'lucide-react';
 
 export default function DashboardGallery() {
+  const { data: albums } = useAlbums();
+
   return (
     <DashboardLayout>
       <div className="mb-6">
@@ -10,10 +12,14 @@ export default function DashboardGallery() {
         <p className="text-sm text-muted-foreground">School photo albums</p>
       </div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {mockAlbums.map(album => (
+        {(albums || []).map(album => (
           <div key={album.id} className="card-matte overflow-hidden hover:shadow-lift transition-shadow cursor-pointer group">
             <div className="aspect-video bg-muted flex items-center justify-center">
-              <ImageIcon className="w-10 h-10 text-muted-foreground/20 group-hover:scale-110 transition-transform" />
+              {album.cover_image_url ? (
+                <img src={album.cover_image_url} alt={album.name} className="w-full h-full object-cover" />
+              ) : (
+                <ImageIcon className="w-10 h-10 text-muted-foreground/20 group-hover:scale-110 transition-transform" />
+              )}
             </div>
             <div className="p-4">
               <h3 className="font-display font-semibold text-sm">{album.name}</h3>
