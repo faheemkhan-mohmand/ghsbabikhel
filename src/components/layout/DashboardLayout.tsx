@@ -1,9 +1,10 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import NotificationBell from '@/components/NotificationBell';
 import {
   Calendar, ClipboardList, Newspaper, BookOpen, Image, Trophy, Users,
-  BarChart3, Menu, X, GraduationCap, LogOut, Home, ChevronLeft
+  BarChart3, Menu, X, GraduationCap, LogOut, Home, ChevronLeft, Video, Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -16,17 +17,19 @@ const userLinks: SidebarLink[] = [
   { name: 'News', path: '/dashboard/news', icon: Newspaper },
   { name: 'Library', path: '/dashboard/library', icon: BookOpen },
   { name: 'Gallery', path: '/dashboard/gallery', icon: Image },
+  { name: 'Videos', path: '/dashboard/videos', icon: Video },
   { name: 'Achievements', path: '/dashboard/achievements', icon: Trophy },
   { name: 'Teachers', path: '/dashboard/teachers', icon: Users },
 ];
 
 const adminLinks: SidebarLink[] = [
   { name: 'Overview', path: '/admin', icon: Home },
-  { name: 'School Info', path: '/admin/school-info', icon: GraduationCap },
+  { name: 'School Info', path: '/admin/school-info', icon: Settings },
   { name: 'Teachers', path: '/admin/teachers', icon: Users },
   { name: 'Notices', path: '/admin/notices', icon: ClipboardList },
   { name: 'News', path: '/admin/news', icon: Newspaper },
   { name: 'Gallery', path: '/admin/gallery', icon: Image },
+  { name: 'Videos', path: '/admin/videos', icon: Video },
   { name: 'Library', path: '/admin/library', icon: BookOpen },
   { name: 'Timetable', path: '/admin/timetable', icon: Calendar },
   { name: 'Results', path: '/admin/results', icon: BarChart3 },
@@ -83,6 +86,7 @@ export default function DashboardLayout({ children, isAdmin = false }: Dashboard
           <button className="lg:hidden p-2 -ml-2" onClick={() => setSidebarOpen(true)}><Menu className="w-5 h-5" /></button>
           <div className="flex-1" />
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-semibold">
               {user?.name?.charAt(0) || 'U'}
             </div>

@@ -14,7 +14,7 @@ const navLinks = [
   { name: 'Results', path: '/results' },
   { name: 'Gallery', path: '/gallery' },
   { name: 'Library', path: '/library' },
-  { name: 'Achievements', path: '/achievements' },
+  { name: 'Videos', path: '/videos' },
 ];
 
 export default function PublicNavbar() {
@@ -29,9 +29,7 @@ export default function PublicNavbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    setIsOpen(false);
-  }, [location.pathname]);
+  useEffect(() => { setIsOpen(false); }, [location.pathname]);
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'glass-header shadow-matte' : 'bg-transparent'}`}>
@@ -44,20 +42,13 @@ export default function PublicNavbar() {
             <span className="font-display font-bold text-lg text-foreground">GHS Babi Khel</span>
           </Link>
 
-          {/* Desktop Nav */}
           <div className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
+              <Link key={link.path} to={link.path}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  location.pathname === link.path
-                    ? 'text-primary bg-accent'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  location.pathname === link.path ? 'text-primary bg-accent' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 }`}
-              >
-                {link.name}
-              </Link>
+              >{link.name}</Link>
             ))}
           </div>
 
@@ -71,52 +62,31 @@ export default function PublicNavbar() {
               </>
             ) : (
               <>
-                <Link to="/login">
-                  <Button variant="ghost" size="sm">Sign In</Button>
-                </Link>
-                <Link to="/signup">
-                  <Button size="sm" className="btn-press">Sign Up</Button>
-                </Link>
+                <Link to="/login"><Button variant="ghost" size="sm">Sign In</Button></Link>
+                <Link to="/signup"><Button size="sm" className="btn-press">Sign Up</Button></Link>
               </>
             )}
           </div>
 
-          {/* Mobile toggle */}
           <button className="lg:hidden p-2" onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </nav>
 
-      {/* Mobile menu */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden glass-header border-t border-border"
-          >
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="lg:hidden glass-header border-t border-border">
             <div className="container-main py-4 space-y-1">
               {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                    location.pathname === link.path
-                      ? 'text-primary bg-accent'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {link.name}
-                </Link>
+                <Link key={link.path} to={link.path}
+                  className={`block px-3 py-2 rounded-md text-sm font-medium ${location.pathname === link.path ? 'text-primary bg-accent' : 'text-muted-foreground hover:text-foreground'}`}
+                >{link.name}</Link>
               ))}
               <div className="pt-3 border-t border-border flex gap-2">
                 {user ? (
                   <>
-                    <Link to={user.role === 'admin' ? '/admin' : '/dashboard'} className="flex-1">
-                      <Button size="sm" className="w-full btn-press">Dashboard</Button>
-                    </Link>
+                    <Link to={user.role === 'admin' ? '/admin' : '/dashboard'} className="flex-1"><Button size="sm" className="w-full btn-press">Dashboard</Button></Link>
                     <Button variant="ghost" size="sm" onClick={signOut}>Sign Out</Button>
                   </>
                 ) : (

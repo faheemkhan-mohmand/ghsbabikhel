@@ -12,7 +12,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,7 +22,7 @@ export default function Login() {
     try {
       await signIn(email, password);
       toast.success('Welcome back!');
-      navigate('/');
+      // Redirect handled by auth state change
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -30,9 +30,15 @@ export default function Login() {
     }
   };
 
+  // If already logged in, redirect
+  if (user) {
+    navigate(user.role === 'admin' ? '/admin' : '/dashboard', { replace: true });
+    return null;
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-muted px-4">
+      <div className="w-full max-w-md animate-in">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-6">
             <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
@@ -41,13 +47,12 @@ export default function Login() {
             <span className="font-display font-bold text-xl">GHS Babi Khel</span>
           </Link>
           <h1 className="text-2xl font-display font-bold">Welcome Back</h1>
-          <p className="text-muted-foreground text-sm mt-1">Sign in to your account</p>
+          <p className="text-muted-foreground text-sm mt-1">Sign in to access your dashboard</p>
         </div>
         <div className="card-matte p-8">
           {error && (
             <div className="flex items-center gap-2 bg-destructive/10 text-destructive rounded-lg p-3 mb-6 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {error}
+              <AlertCircle className="w-4 h-4 shrink-0" />{error}
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">

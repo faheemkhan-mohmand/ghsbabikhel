@@ -6,79 +6,83 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --background: 0 0% 99%;
+    --foreground: 0 0% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 0 0% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 0 0% 8%;
 
-    --primary: 162 100% 18%;
+    --primary: 0 72% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 0 20% 96%;
+    --secondary-foreground: 0 0% 8%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 0 10% 96%;
+    --muted-foreground: 0 0% 42%;
 
-    --accent: 162 82% 95%;
-    --accent-foreground: 162 100% 18%;
+    --accent: 0 60% 96%;
+    --accent-foreground: 0 72% 42%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 162 100% 18%;
+    --border: 0 10% 90%;
+    --input: 0 10% 90%;
+    --ring: 0 72% 42%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 162 100% 18%;
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 0 72% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 12%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 222 47% 15%;
-    --sidebar-ring: 162 100% 18%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 0 72% 42%;
 
-    --academic-900: 162 100% 18%;
-    --academic-500: 160 84% 39%;
-    --academic-50: 152 81% 96%;
+    --academic-900: 0 72% 42%;
+    --academic-500: 0 60% 55%;
+    --academic-50: 0 50% 97%;
     --gold: 43 96% 56%;
     --silver: 210 14% 73%;
     --bronze: 30 65% 50%;
+    --success: 142 71% 45%;
   }
 
   .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 96%;
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 96%;
-    --popover: 222 47% 8%;
-    --popover-foreground: 210 40% 96%;
-    --primary: 162 84% 39%;
+    --background: 0 0% 6%;
+    --foreground: 0 0% 96%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 96%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 0 72% 55%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 96%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 162 82% 10%;
-    --accent-foreground: 162 82% 95%;
+    --secondary: 0 10% 17%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 0 10% 17%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 0 50% 12%;
+    --accent-foreground: 0 60% 90%;
     --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 96%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 162 84% 39%;
+    --destructive-foreground: 0 0% 96%;
+    --border: 0 10% 17%;
+    --input: 0 10% 17%;
+    --ring: 0 72% 55%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
   }
   body {
     @apply bg-background text-foreground font-body antialiased;
@@ -95,8 +99,11 @@
   .card-matte {
     @apply bg-card border border-border rounded-xl shadow-matte;
   }
+  .card-hover {
+    @apply bg-card border border-border rounded-xl shadow-matte transition-all duration-300 hover:shadow-lift hover:-translate-y-1;
+  }
   .btn-press {
-    @apply active:scale-[0.98] transition-transform duration-150;
+    @apply active:scale-[0.98] transition-all duration-150;
   }
   .badge-gold {
     background: linear-gradient(135deg, hsl(43, 96%, 56%), hsl(36, 100%, 40%));
@@ -118,5 +125,22 @@
   }
   .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+  .animate-in {
+    animation: fadeSlideIn 0.5s ease-out forwards;
+  }
+  .notification-dot {
+    @apply absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-destructive border-2 border-background;
+  }
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
