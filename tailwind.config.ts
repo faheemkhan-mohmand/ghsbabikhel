@@ -69,6 +69,7 @@ export default {
         gold: "hsl(var(--gold))",
         silver: "hsl(var(--silver))",
         bronze: "hsl(var(--bronze))",
+        success: "hsl(var(--success))",
       },
       borderRadius: {
         lg: "var(--radius)",
