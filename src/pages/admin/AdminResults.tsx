@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { useResults, useMutateResult, initials, StudentResult } from '@/hooks/useSupabaseData';
+import { useResults, useMutateResult, initials, uploadFile, StudentResult } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, Trophy, Users, BarChart3 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Trophy, Users, BarChart3, TrendingUp, TrendingDown, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const classes = ['6th', '7th', '8th', '9th', '10th'];
@@ -25,22 +25,30 @@ function PositionBadge({ position }: { position: number }) {
 export default function AdminResults() {
   const [selectedClass, setSelectedClass] = useState('10th');
   const [selectedExam, setSelectedExam] = useState('Annual-I');
-  const { data: results, isLoading } = useResults(selectedClass, selectedExam);
+  const { data: results } = useResults(selectedClass, selectedExam);
   const { upsert, remove } = useMutateResult();
   const [editing, setEditing] = useState<StudentResult | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({ name: '', roll_number: '', obtained_marks: '', total_marks: '' });
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   const filtered = results || [];
   const totalStudents = filtered.length;
   const passed = filtered.filter(r => Number(r.percentage) >= 33).length;
+  const failed = totalStudents - passed;
+  const highest = filtered.length > 0 ? Math.max(...filtered.map(r => Number(r.percentage))) : 0;
+  const lowest = filtered.length > 0 ? Math.min(...filtered.map(r => Number(r.percentage))) : 0;
 
-  const openAdd = () => { setEditing(null); setForm({ name: '', roll_number: '', obtained_marks: '', total_marks: '' }); setIsOpen(true); };
-  const openEdit = (r: StudentResult) => { setEditing(r); setForm({ name: r.name, roll_number: r.roll_number, obtained_marks: r.obtained_marks.toString(), total_marks: r.total_marks.toString() }); setIsOpen(true); };
+  const openAdd = () => { setEditing(null); setForm({ name: '', roll_number: '', obtained_marks: '', total_marks: '' }); setPhotoFile(null); setIsOpen(true); };
+  const openEdit = (r: StudentResult) => { setEditing(r); setForm({ name: r.name, roll_number: r.roll_number, obtained_marks: r.obtained_marks.toString(), total_marks: r.total_marks.toString() }); setPhotoFile(null); setIsOpen(true); };
 
   const handleSave = async () => {
     if (!form.name || !form.roll_number) return;
     try {
+      let photo_url = editing?.photo_url;
+      if (photoFile) {
+        photo_url = await uploadFile('photos', `students/${Date.now()}_${photoFile.name}`, photoFile);
+      }
       await upsert.mutateAsync({
         name: form.name,
         roll_number: form.roll_number,
@@ -48,6 +56,7 @@ export default function AdminResults() {
         total_marks: parseInt(form.total_marks) || 0,
         class_name: selectedClass,
         exam_type: selectedExam,
+        photo_url,
         ...(editing ? { id: editing.id } : {}),
       });
       toast.success(editing ? 'Result updated' : 'Student added');
@@ -58,6 +67,15 @@ export default function AdminResults() {
   const handleDelete = async (id: string) => {
     try { await remove.mutateAsync(id); toast.success('Deleted'); } catch (e: any) { toast.error(e.message); }
   };
+
+  const summaryCards = [
+    { icon: Users, label: 'Total', value: totalStudents, color: 'bg-primary/10 text-primary' },
+    { icon: Trophy, label: 'Passed', value: passed, color: 'bg-green-50 text-green-600' },
+    { icon: XCircle, label: 'Failed', value: failed, color: 'bg-destructive/10 text-destructive' },
+    { icon: BarChart3, label: 'Pass %', value: totalStudents ? `${((passed / totalStudents) * 100).toFixed(0)}%` : '0%', color: 'bg-accent text-accent-foreground' },
+    { icon: TrendingUp, label: 'Highest', value: `${highest.toFixed(1)}%`, color: 'bg-primary/10 text-primary' },
+    { icon: TrendingDown, label: 'Lowest', value: `${lowest.toFixed(1)}%`, color: 'bg-muted text-muted-foreground' },
+  ];
 
   return (
     <DashboardLayout isAdmin>
@@ -79,8 +97,8 @@ export default function AdminResults() {
                 <div><Label>Obtained Marks</Label><Input type="number" value={form.obtained_marks} onChange={e => setForm(f => ({ ...f, obtained_marks: e.target.value }))} className="mt-1" /></div>
                 <div><Label>Total Marks</Label><Input type="number" value={form.total_marks} onChange={e => setForm(f => ({ ...f, total_marks: e.target.value }))} className="mt-1" /></div>
               </div>
-              <p className="text-xs text-muted-foreground">Class: {selectedClass} | Exam: {selectedExam}</p>
-              <p className="text-xs text-muted-foreground">Percentage and position will be calculated automatically.</p>
+              <div><Label>Student Photo (optional)</Label><Input type="file" accept="image/*" onChange={e => setPhotoFile(e.target.files?.[0] || null)} className="mt-1" /></div>
+              <p className="text-xs text-muted-foreground">Class: {selectedClass} | Exam: {selectedExam} — Percentage calculated automatically.</p>
               <Button onClick={handleSave} className="w-full btn-press" disabled={upsert.isPending}>{upsert.isPending ? 'Saving...' : 'Save'}</Button>
             </div>
           </DialogContent>
@@ -98,10 +116,12 @@ export default function AdminResults() {
         </Select>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        {[{ icon: Users, label: 'Total', value: totalStudents }, { icon: Trophy, label: 'Passed', value: passed }, { icon: BarChart3, label: 'Pass %', value: totalStudents ? `${((passed / totalStudents) * 100).toFixed(0)}%` : '0%' }].map(s => (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        {summaryCards.map(s => (
           <div key={s.label} className="card-matte p-4 text-center">
-            <s.icon className="w-5 h-5 text-primary mx-auto mb-1" />
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-2 ${s.color}`}>
+              <s.icon className="w-4 h-4" />
+            </div>
             <p className="text-xl font-display font-bold tabular-nums">{s.value}</p>
             <p className="text-xs text-muted-foreground">{s.label}</p>
           </div>
@@ -113,7 +133,7 @@ export default function AdminResults() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50 border-b border-border">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Pos</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Rank</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Student</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Roll #</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Marks</th>
@@ -123,11 +143,17 @@ export default function AdminResults() {
             </thead>
             <tbody>
               {filtered.map(r => (
-                <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/30">
+                <tr key={r.id} className={`border-b border-border last:border-0 hover:bg-muted/30 transition-colors ${r.position <= 3 ? 'bg-accent/20' : ''}`}>
                   <td className="px-4 py-3"><PositionBadge position={r.position} /></td>
-                  <td className="px-4 py-3 flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">{initials(r.name)}</div>
-                    <span className="font-medium">{r.name}</span>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {r.photo_url ? (
+                        <img src={r.photo_url} alt={r.name} className="w-8 h-8 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">{initials(r.name)}</div>
+                      )}
+                      <span className="font-medium">{r.name}</span>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground tabular-nums">{r.roll_number}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{r.obtained_marks}/{r.total_marks}</td>

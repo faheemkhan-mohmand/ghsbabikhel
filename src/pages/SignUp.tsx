@@ -13,7 +13,7 @@ export default function SignUp() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signUp } = useAuth();
+  const { signUp, user } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,8 +22,8 @@ export default function SignUp() {
     setLoading(true);
     try {
       await signUp(email, password, name);
-      toast.success('Account created successfully!');
-      navigate('/');
+      toast.success('Account created! Welcome to GHS Babi Khel.');
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -31,9 +31,14 @@ export default function SignUp() {
     }
   };
 
+  if (user) {
+    navigate(user.role === 'admin' ? '/admin' : '/dashboard', { replace: true });
+    return null;
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-muted px-4">
+      <div className="w-full max-w-md animate-in">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-6">
             <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
@@ -47,8 +52,7 @@ export default function SignUp() {
         <div className="card-matte p-8">
           {error && (
             <div className="flex items-center gap-2 bg-destructive/10 text-destructive rounded-lg p-3 mb-6 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {error}
+              <AlertCircle className="w-4 h-4 shrink-0" />{error}
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
