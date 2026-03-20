@@ -107,6 +107,29 @@ export interface SchoolInfo {
   address: string;
   phone: string;
   email: string;
+  logo_url?: string;
+  banner_url?: string;
+  principal_name?: string;
+  principal_message?: string;
+  principal_photo_url?: string;
+}
+
+export interface VideoItem {
+  id: string;
+  title: string;
+  description: string;
+  video_url?: string;
+  youtube_url?: string;
+  created_at?: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id?: string;
+  type: 'notice' | 'result' | 'news' | 'library' | 'general';
+  message: string;
+  is_read: boolean;
+  created_at: string;
 }
 
 // =================== HELPERS ===================
@@ -379,7 +402,6 @@ export function useResults(className?: string, examType?: string) {
       q = q.order('percentage', { ascending: false });
       const { data, error } = await q;
       if (error) throw error;
-      // Auto-assign positions
       return (data || []).map((r: any, i: number) => ({ ...r, position: i + 1 })) as StudentResult[];
     },
   });
@@ -389,9 +411,7 @@ export function useMutateResult() {
   const qc = useQueryClient();
   const upsert = useMutation({
     mutationFn: async (result: Partial<StudentResult> & { id?: string }) => {
-      // percentage is a generated column - don't send it
       const { percentage, position, ...rest } = result as any;
-
       if (rest.id) {
         const { id, ...updatePayload } = rest;
         const { error } = await supabase.from('results').update(updatePayload).eq('id', id);
@@ -457,7 +477,7 @@ export function useSchoolInfo() {
     queryKey: ['school_info'],
     queryFn: async () => {
       const { data, error } = await supabase.from('school_info').select('*').limit(1).single();
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+      if (error && error.code !== 'PGRST116') throw error;
       return data as SchoolInfo | null;
     },
   });
@@ -477,6 +497,89 @@ export function useMutateSchoolInfo() {
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['school_info'] }); },
   });
+}
+
+// =================== VIDEOS ===================
+export function useVideos() {
+  return useQuery({
+    queryKey: ['videos'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('videos').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as VideoItem[];
+    },
+  });
+}
+
+export function useMutateVideo() {
+  const qc = useQueryClient();
+  const upsert = useMutation({
+    mutationFn: async (item: Partial<VideoItem> & { id?: string }) => {
+      if (item.id) {
+        const { error } = await supabase.from('videos').update(item).eq('id', item.id);
+        if (error) throw error;
+      } else {
+        const { id, ...payload } = item as any;
+        const { error } = await supabase.from('videos').insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['videos'] }); },
+  });
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('videos').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['videos'] }); },
+  });
+  return { upsert, remove };
+}
+
+// =================== NOTIFICATIONS ===================
+export function useNotifications(userId?: string) {
+  return useQuery({
+    queryKey: ['notifications', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .or(`user_id.eq.${userId},user_id.is.null`)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data || []) as Notification[];
+    },
+    enabled: !!userId,
+    refetchInterval: 30000,
+  });
+}
+
+export function useMutateNotification() {
+  const qc = useQueryClient();
+  const markRead = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['notifications'] }); },
+  });
+  const markAllRead = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase.from('notifications').update({ is_read: true }).or(`user_id.eq.${userId},user_id.is.null`).eq('is_read', false);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['notifications'] }); },
+  });
+  const create = useMutation({
+    mutationFn: async (n: Partial<Notification>) => {
+      const { error } = await supabase.from('notifications').insert(n);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['notifications'] }); },
+  });
+  return { markRead, markAllRead, create };
 }
 
 // =================== FILE UPLOAD ===================
