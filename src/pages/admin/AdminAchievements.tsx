@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { useAchievements, useMutateAchievement, Achievement } from '@/hooks/useSupabaseData';
+import { useAchievements, useMutateAchievement, uploadFile, Achievement } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,15 +15,21 @@ export default function AdminAchievements() {
   const [editing, setEditing] = useState<Achievement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', category: '' });
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const openAdd = () => { setEditing(null); setForm({ title: '', description: '', category: '' }); setIsOpen(true); };
-  const openEdit = (a: Achievement) => { setEditing(a); setForm({ title: a.title, description: a.description, category: a.category }); setIsOpen(true); };
+  const openAdd = () => { setEditing(null); setForm({ title: '', description: '', category: '' }); setImageFile(null); setIsOpen(true); };
+  const openEdit = (a: Achievement) => { setEditing(a); setForm({ title: a.title, description: a.description, category: a.category }); setImageFile(null); setIsOpen(true); };
 
   const handleSave = async () => {
     if (!form.title) return;
     try {
+      let image_url = editing?.image_url;
+      if (imageFile) {
+        image_url = await uploadFile('photos', `achievements/${Date.now()}_${imageFile.name}`, imageFile);
+      }
       await upsert.mutateAsync({
         ...form,
+        image_url,
         date: editing?.date || new Date().toISOString().split('T')[0],
         ...(editing ? { id: editing.id } : {}),
       });
@@ -53,6 +59,8 @@ export default function AdminAchievements() {
               <div><Label>Title</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className="mt-1" /></div>
               <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="mt-1" /></div>
               <div><Label>Category</Label><Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="Academic, Sports, Recognition" className="mt-1" /></div>
+              <div><Label>Image (optional)</Label><Input type="file" accept="image/*" onChange={e => setImageFile(e.target.files?.[0] || null)} className="mt-1" /></div>
+              {editing?.image_url && !imageFile && <img src={editing.image_url} alt="" className="h-20 rounded-lg object-cover" />}
               <Button onClick={handleSave} className="w-full btn-press" disabled={upsert.isPending}>{upsert.isPending ? 'Saving...' : 'Save'}</Button>
             </div>
           </DialogContent>
@@ -61,6 +69,7 @@ export default function AdminAchievements() {
       <div className="space-y-3">
         {(items || []).map(a => (
           <div key={a.id} className="card-matte p-5 flex items-start gap-3">
+            {a.image_url && <img src={a.image_url} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" />}
             <Trophy className="w-4 h-4 text-primary mt-1 shrink-0" />
             <div className="flex-1">
               <h3 className="font-display font-semibold text-sm">{a.title}</h3>

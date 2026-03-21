@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { useNotices, useMutateNotice, Notice } from '@/hooks/useSupabaseData';
+import { useNotices, useMutateNotice, uploadFile, Notice } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,15 +16,21 @@ export default function AdminNotices() {
   const [editing, setEditing] = useState<Notice | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({ title: '', content: '', priority: 'medium' as Notice['priority'] });
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const openAdd = () => { setEditing(null); setForm({ title: '', content: '', priority: 'medium' }); setIsOpen(true); };
-  const openEdit = (n: Notice) => { setEditing(n); setForm({ title: n.title, content: n.content, priority: n.priority }); setIsOpen(true); };
+  const openAdd = () => { setEditing(null); setForm({ title: '', content: '', priority: 'medium' }); setImageFile(null); setIsOpen(true); };
+  const openEdit = (n: Notice) => { setEditing(n); setForm({ title: n.title, content: n.content, priority: n.priority }); setImageFile(null); setIsOpen(true); };
 
   const handleSave = async () => {
     if (!form.title) return;
     try {
+      let image_url = editing?.image_url;
+      if (imageFile) {
+        image_url = await uploadFile('photos', `notices/${Date.now()}_${imageFile.name}`, imageFile);
+      }
       await upsert.mutateAsync({
         ...form,
+        image_url,
         date: editing?.date || new Date().toISOString().split('T')[0],
         ...(editing ? { id: editing.id } : {}),
       });
@@ -64,6 +70,8 @@ export default function AdminNotices() {
                   </SelectContent>
                 </Select>
               </div>
+              <div><Label>Image (optional)</Label><Input type="file" accept="image/*" onChange={e => setImageFile(e.target.files?.[0] || null)} className="mt-1" /></div>
+              {editing?.image_url && !imageFile && <img src={editing.image_url} alt="" className="h-20 rounded-lg object-cover" />}
               <Button onClick={handleSave} className="w-full btn-press" disabled={upsert.isPending}>{upsert.isPending ? 'Saving...' : 'Save'}</Button>
             </div>
           </DialogContent>
@@ -72,6 +80,7 @@ export default function AdminNotices() {
       <div className="space-y-3">
         {(notices || []).map(n => (
           <div key={n.id} className="card-matte p-5 flex items-start gap-3">
+            {n.image_url && <img src={n.image_url} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" />}
             <Bell className="w-4 h-4 text-primary mt-1 shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">

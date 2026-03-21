@@ -19,59 +19,52 @@ export default function Index() {
   const { data: teachers } = useTeachers();
   const { data: achievements } = useAchievements();
 
-  const si = schoolInfo || { name: 'GHS Babi Khel', full_name: '', description: '', total_students: 0, pass_rate: 0, total_teachers: 0, established: 1985 } as any;
+  const si = schoolInfo || { name: 'GHS Babi Khel', full_name: '', description: '', total_students: 0, pass_rate: 0, total_teachers: 0, established: 2018 } as any;
+
+  const teacherCount = teachers?.length || si.total_teachers || 0;
 
   const stats = [
     { label: 'Students', value: `${si.total_students || 0}+`, icon: Users },
     { label: 'Pass Rate', value: `${si.pass_rate || 0}%`, icon: Award },
-    { label: 'Educators', value: `${si.total_teachers || 0}`, icon: BookOpen },
-    { label: 'Established', value: `${si.established || 1985}`, icon: Clock },
+    { label: 'Educators', value: `${teacherCount}`, icon: BookOpen },
+    { label: 'Established', value: `${si.established || 2018}`, icon: Clock },
   ];
 
   return (
     <PublicLayout>
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-accent/30">
-        <div className="container-main section-padding">
-          <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[70vh]">
-            <motion.div {...fadeUp}>
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-                <GraduationCap className="w-4 h-4" />
-                Est. {si.established}
-              </span>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-extrabold text-foreground leading-[1.1] mb-6">
-                {si.name}:
-                <br />
-                <span className="text-primary">Excellence in Education</span>
-              </h1>
-              <p className="text-lg text-muted-foreground max-w-lg mb-8 leading-relaxed">
-                Empowering the next generation with quality education, modern facilities, and dedicated educators.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Link to="/results">
-                  <Button size="lg" className="btn-press gap-2">View Results <ArrowRight className="w-4 h-4" /></Button>
-                </Link>
-                <Link to="/about">
-                  <Button size="lg" variant="outline" className="btn-press">Learn More</Button>
-                </Link>
-              </div>
-            </motion.div>
-            <motion.div {...fadeUp} transition={{ delay: 0.2, duration: 0.6 }} className="hidden lg:flex justify-center">
-              {si.banner_url ? (
-                <img src={si.banner_url} alt="School" className="w-full max-w-md rounded-2xl shadow-lift object-cover aspect-[4/3]" />
-              ) : (
-                <div className="relative w-full max-w-md aspect-square rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10 flex items-center justify-center">
-                  <GraduationCap className="w-32 h-32 text-primary/30" />
-                  <div className="absolute -top-4 -right-4 w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Trophy className="w-8 h-8 text-primary" />
-                  </div>
-                  <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <BookOpen className="w-10 h-10 text-primary" />
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </div>
+      {/* Hero — Full-width banner */}
+      <section className="relative overflow-hidden min-h-[75vh] flex items-center">
+        {si.banner_url ? (
+          <>
+            <img src={si.banner_url} alt="School Banner" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/60 to-foreground/30" />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/30" />
+        )}
+        <div className="container-main relative z-10 section-padding">
+          <motion.div {...fadeUp} className="max-w-2xl">
+            <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium mb-6 ${si.banner_url ? 'bg-primary-foreground/20 text-primary-foreground backdrop-blur-sm' : 'bg-primary/10 text-primary'}`}>
+              <GraduationCap className="w-4 h-4" />
+              Est. {si.established || 2018}
+            </span>
+            <h1 className={`text-4xl md:text-5xl lg:text-6xl font-display font-extrabold leading-[1.1] mb-6 ${si.banner_url ? 'text-primary-foreground' : 'text-foreground'}`}>
+              {si.name}:
+              <br />
+              <span className={si.banner_url ? 'text-primary-foreground/90' : 'text-primary'}>Excellence in Education</span>
+            </h1>
+            <p className={`text-lg max-w-lg mb-8 leading-relaxed ${si.banner_url ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+              Empowering the next generation with quality education, modern facilities, and dedicated educators.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link to="/results">
+                <Button size="lg" className="btn-press gap-2">View Results <ArrowRight className="w-4 h-4" /></Button>
+              </Link>
+              <Link to="/about">
+                <Button size="lg" variant={si.banner_url ? 'secondary' : 'outline'} className="btn-press">Learn More</Button>
+              </Link>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -137,6 +130,9 @@ export default function Index() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {(notices || []).slice(0, 3).map((notice, i) => (
               <motion.div key={notice.id} {...fadeUp} transition={{ delay: i * 0.1 }} className="card-hover p-6">
+                {notice.image_url && (
+                  <img src={notice.image_url} alt={notice.title} className="w-full h-40 object-cover rounded-lg mb-4" />
+                )}
                 <div className="flex items-center gap-2 mb-3">
                   <Bell className="w-4 h-4 text-primary" />
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
@@ -165,13 +161,18 @@ export default function Index() {
           </motion.div>
           <div className="grid md:grid-cols-2 gap-6">
             {(news || []).slice(0, 4).map((item, i) => (
-              <motion.div key={item.id} {...fadeUp} transition={{ delay: i * 0.1 }} className="card-hover p-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <Newspaper className="w-4 h-4 text-primary" />
-                  <span className="text-xs text-muted-foreground">{new Date(item.date).toLocaleDateString()}</span>
+              <motion.div key={item.id} {...fadeUp} transition={{ delay: i * 0.1 }} className="card-hover overflow-hidden">
+                {item.image_url && (
+                  <img src={item.image_url} alt={item.title} className="w-full h-48 object-cover" />
+                )}
+                <div className="p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Newspaper className="w-4 h-4 text-primary" />
+                    <span className="text-xs text-muted-foreground">{new Date(item.date).toLocaleDateString()}</span>
+                  </div>
+                  <h3 className="font-display font-semibold text-lg mb-2">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.excerpt}</p>
                 </div>
-                <h3 className="font-display font-semibold text-lg mb-2">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">{item.excerpt}</p>
               </motion.div>
             ))}
           </div>
@@ -184,7 +185,7 @@ export default function Index() {
           <motion.div {...fadeUp} className="flex items-center justify-between mb-10">
             <div>
               <h2 className="text-3xl font-display font-bold">Our Educators</h2>
-              <p className="text-muted-foreground mt-1">{si.total_teachers} certified educators</p>
+              <p className="text-muted-foreground mt-1">{teacherCount} certified educators</p>
             </div>
             <Link to="/teachers"><Button variant="ghost" className="gap-1">View All <ArrowRight className="w-4 h-4" /></Button></Link>
           </motion.div>

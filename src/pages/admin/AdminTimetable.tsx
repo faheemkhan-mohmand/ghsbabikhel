@@ -19,6 +19,7 @@ export default function AdminTimetable() {
   const { data: entries, isLoading } = useTimetable(selectedClass);
   const { bulkUpsert } = useMutateTimetable();
   const [editData, setEditData] = useState<Record<string, { subject: string; teacher: string }>>({});
+  const [editTimes, setEditTimes] = useState<Record<number, string>>({});
 
   const periods = useMemo(() => {
     if (!entries || entries.length === 0) return defaultPeriods;
@@ -28,6 +29,12 @@ export default function AdminTimetable() {
       return { period: p, time: entry?.time || '' };
     });
   }, [entries]);
+
+  const getTime = (period: number) => {
+    if (editTimes[period] !== undefined) return editTimes[period];
+    const p = periods.find(p => p.period === period);
+    return p?.time || defaultPeriods.find(dp => dp.period === period)?.time || '';
+  };
 
   const getEntry = (day: string, period: number) => {
     const key = `${day}-${period}`;
@@ -44,16 +51,18 @@ export default function AdminTimetable() {
 
   const handleSave = async () => {
     try {
+      const usedPeriods = periods.length > 0 ? periods : defaultPeriods;
       const allEntries = days.flatMap(day =>
-        (periods.length > 0 ? periods : defaultPeriods).map(p => {
+        usedPeriods.map(p => {
           const data = getEntry(day, p.period);
+          const time = getTime(p.period);
           const existing = entries?.find(e => e.day === day && e.period === p.period);
           return {
             ...(existing?.id ? { id: existing.id } : {}),
             class_name: selectedClass,
             day,
             period: p.period,
-            time: p.time,
+            time,
             subject: data.subject || '-',
             teacher: data.teacher || '-',
           };
@@ -61,6 +70,7 @@ export default function AdminTimetable() {
       );
       await bulkUpsert.mutateAsync(allEntries);
       setEditData({});
+      setEditTimes({});
       toast.success('Timetable saved!');
     } catch (e: any) { toast.error(e.message); }
   };
@@ -75,7 +85,7 @@ export default function AdminTimetable() {
           <p className="text-sm text-muted-foreground">Edit class-wise timetables</p>
         </div>
         <div className="flex gap-2">
-          <Select value={selectedClass} onValueChange={v => { setSelectedClass(v); setEditData({}); }}>
+          <Select value={selectedClass} onValueChange={v => { setSelectedClass(v); setEditData({}); setEditTimes({}); }}>
             <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
             <SelectContent>{classes.map(c => <SelectItem key={c} value={c}>Class {c}</SelectItem>)}</SelectContent>
           </Select>
@@ -93,7 +103,12 @@ export default function AdminTimetable() {
                 {usedPeriods.map(p => (
                   <th key={p.period} className="px-2 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">
                     <div>P{p.period}</div>
-                    <div className="font-normal text-[10px] mt-0.5">{p.time}</div>
+                    <Input
+                      value={getTime(p.period)}
+                      onChange={e => setEditTimes(prev => ({ ...prev, [p.period]: e.target.value }))}
+                      className="text-[10px] h-6 mt-0.5 text-center w-24 mx-auto"
+                      placeholder="Time"
+                    />
                   </th>
                 ))}
               </tr>

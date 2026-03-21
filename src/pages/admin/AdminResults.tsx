@@ -14,6 +14,7 @@ const examTypes: Record<string, string[]> = {
   '6th': ['1st Semester', '2nd Semester'], '7th': ['1st Semester', '2nd Semester'], '8th': ['1st Semester', '2nd Semester'],
   '9th': ['Annual-I', 'Annual-II'], '10th': ['Annual-I', 'Annual-II'],
 };
+const years = ['2024', '2025', '2026'];
 
 function PositionBadge({ position }: { position: number }) {
   if (position === 1) return <span className="badge-gold">🥇 1st</span>;
@@ -25,7 +26,8 @@ function PositionBadge({ position }: { position: number }) {
 export default function AdminResults() {
   const [selectedClass, setSelectedClass] = useState('10th');
   const [selectedExam, setSelectedExam] = useState('Annual-I');
-  const { data: results } = useResults(selectedClass, selectedExam);
+  const [selectedYear, setSelectedYear] = useState('2026');
+  const { data: results } = useResults(selectedClass, selectedExam, selectedYear);
   const { upsert, remove } = useMutateResult();
   const [editing, setEditing] = useState<StudentResult | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -38,6 +40,7 @@ export default function AdminResults() {
   const failed = totalStudents - passed;
   const highest = filtered.length > 0 ? Math.max(...filtered.map(r => Number(r.percentage))) : 0;
   const lowest = filtered.length > 0 ? Math.min(...filtered.map(r => Number(r.percentage))) : 0;
+  const average = filtered.length > 0 ? filtered.reduce((s, r) => s + Number(r.percentage), 0) / filtered.length : 0;
 
   const openAdd = () => { setEditing(null); setForm({ name: '', roll_number: '', obtained_marks: '', total_marks: '' }); setPhotoFile(null); setIsOpen(true); };
   const openEdit = (r: StudentResult) => { setEditing(r); setForm({ name: r.name, roll_number: r.roll_number, obtained_marks: r.obtained_marks.toString(), total_marks: r.total_marks.toString() }); setPhotoFile(null); setIsOpen(true); };
@@ -56,6 +59,7 @@ export default function AdminResults() {
         total_marks: parseInt(form.total_marks) || 0,
         class_name: selectedClass,
         exam_type: selectedExam,
+        year: selectedYear,
         photo_url,
         ...(editing ? { id: editing.id } : {}),
       });
@@ -98,7 +102,7 @@ export default function AdminResults() {
                 <div><Label>Total Marks</Label><Input type="number" value={form.total_marks} onChange={e => setForm(f => ({ ...f, total_marks: e.target.value }))} className="mt-1" /></div>
               </div>
               <div><Label>Student Photo (optional)</Label><Input type="file" accept="image/*" onChange={e => setPhotoFile(e.target.files?.[0] || null)} className="mt-1" /></div>
-              <p className="text-xs text-muted-foreground">Class: {selectedClass} | Exam: {selectedExam} — Percentage calculated automatically.</p>
+              <p className="text-xs text-muted-foreground">Class: {selectedClass} | Exam: {selectedExam} | Year: {selectedYear}</p>
               <Button onClick={handleSave} className="w-full btn-press" disabled={upsert.isPending}>{upsert.isPending ? 'Saving...' : 'Save'}</Button>
             </div>
           </DialogContent>
@@ -113,6 +117,10 @@ export default function AdminResults() {
         <Select value={selectedExam} onValueChange={setSelectedExam}>
           <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>{examTypes[selectedClass].map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={selectedYear} onValueChange={setSelectedYear}>
+          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+          <SelectContent>{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
         </Select>
       </div>
 

@@ -2,13 +2,14 @@ import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useResults, initials } from '@/hooks/useSupabaseData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trophy, Users, BarChart3, TrendingUp, TrendingDown, XCircle } from 'lucide-react';
+import { Trophy, Users, BarChart3, TrendingUp, TrendingDown, XCircle, Calculator } from 'lucide-react';
 
 const classes = ['6th', '7th', '8th', '9th', '10th'];
 const examTypes: Record<string, string[]> = {
   '6th': ['1st Semester', '2nd Semester'], '7th': ['1st Semester', '2nd Semester'], '8th': ['1st Semester', '2nd Semester'],
   '9th': ['Annual-I', 'Annual-II'], '10th': ['Annual-I', 'Annual-II'],
 };
+const years = ['2024', '2025', '2026'];
 
 function PositionBadge({ position }: { position: number }) {
   if (position === 1) return <span className="badge-gold">🥇 1st</span>;
@@ -20,7 +21,8 @@ function PositionBadge({ position }: { position: number }) {
 export default function DashboardResults() {
   const [selectedClass, setSelectedClass] = useState('10th');
   const [selectedExam, setSelectedExam] = useState('Annual-I');
-  const { data: results, isLoading } = useResults(selectedClass, selectedExam);
+  const [selectedYear, setSelectedYear] = useState('2026');
+  const { data: results, isLoading } = useResults(selectedClass, selectedExam, selectedYear);
 
   const filtered = results || [];
   const totalStudents = filtered.length;
@@ -28,6 +30,7 @@ export default function DashboardResults() {
   const failed = totalStudents - passed;
   const highest = filtered.length > 0 ? Math.max(...filtered.map(r => Number(r.percentage))) : 0;
   const lowest = filtered.length > 0 ? Math.min(...filtered.map(r => Number(r.percentage))) : 0;
+  const average = filtered.length > 0 ? filtered.reduce((s, r) => s + Number(r.percentage), 0) / filtered.length : 0;
 
   const summaryCards = [
     { icon: Users, label: 'Total Students', value: totalStudents, color: 'bg-primary/10 text-primary' },
@@ -36,6 +39,7 @@ export default function DashboardResults() {
     { icon: BarChart3, label: 'Pass %', value: totalStudents ? `${((passed / totalStudents) * 100).toFixed(0)}%` : '0%', color: 'bg-accent text-accent-foreground' },
     { icon: TrendingUp, label: 'Highest', value: `${highest.toFixed(1)}%`, color: 'bg-primary/10 text-primary' },
     { icon: TrendingDown, label: 'Lowest', value: `${lowest.toFixed(1)}%`, color: 'bg-muted text-muted-foreground' },
+    { icon: Calculator, label: 'Average', value: `${average.toFixed(1)}%`, color: 'bg-accent text-accent-foreground' },
   ];
 
   return (
@@ -53,8 +57,12 @@ export default function DashboardResults() {
           <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>{examTypes[selectedClass].map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
         </Select>
+        <Select value={selectedYear} onValueChange={setSelectedYear}>
+          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+          <SelectContent>{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+        </Select>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
         {summaryCards.map(s => (
           <div key={s.label} className="card-matte p-4 text-center">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-2 ${s.color}`}>
