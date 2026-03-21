@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSchoolInfo } from '@/hooks/useSupabaseData';
 import NotificationBell from '@/components/NotificationBell';
 import {
   Calendar, ClipboardList, Newspaper, BookOpen, Image, Trophy, Users,
@@ -43,6 +44,7 @@ export default function DashboardLayout({ children, isAdmin = false }: Dashboard
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { data: si } = useSchoolInfo();
   const links = isAdmin ? adminLinks : userLinks;
 
   const handleSignOut = async () => {
@@ -55,9 +57,13 @@ export default function DashboardLayout({ children, isAdmin = false }: Dashboard
       {sidebarOpen && <div className="fixed inset-0 z-40 bg-foreground/50 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       <aside className={`fixed lg:sticky top-0 left-0 z-50 lg:z-auto h-screen w-[260px] bg-sidebar text-sidebar-foreground flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="h-16 flex items-center gap-2 px-5 border-b border-sidebar-border shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <GraduationCap className="w-4 h-4 text-primary-foreground" />
-          </div>
+          {si?.logo_url ? (
+            <img src={si.logo_url} alt="Logo" className="w-8 h-8 rounded-lg object-contain" />
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <GraduationCap className="w-4 h-4 text-primary-foreground" />
+            </div>
+          )}
           <span className="font-display font-bold text-sm">{isAdmin ? 'Admin Panel' : 'Dashboard'}</span>
           <button className="ml-auto lg:hidden" onClick={() => setSidebarOpen(false)}><X className="w-5 h-5" /></button>
         </div>

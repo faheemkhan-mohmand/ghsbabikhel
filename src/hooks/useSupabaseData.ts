@@ -19,6 +19,7 @@ export interface Notice {
   content: string;
   date: string;
   priority: 'high' | 'medium' | 'low';
+  image_url?: string;
   created_at?: string;
 }
 
@@ -77,6 +78,7 @@ export interface StudentResult {
   photo_url?: string;
   class_name: string;
   exam_type: string;
+  year?: string;
   obtained_marks: number;
   total_marks: number;
   percentage: number;
@@ -90,6 +92,7 @@ export interface Achievement {
   description: string;
   date: string;
   category: string;
+  image_url?: string;
   created_at?: string;
 }
 
@@ -392,13 +395,14 @@ export function useMutateTimetable() {
 }
 
 // =================== RESULTS ===================
-export function useResults(className?: string, examType?: string) {
+export function useResults(className?: string, examType?: string, year?: string) {
   return useQuery({
-    queryKey: ['results', className, examType],
+    queryKey: ['results', className, examType, year],
     queryFn: async () => {
       let q = supabase.from('results').select('*');
       if (className) q = q.eq('class_name', className);
       if (examType) q = q.eq('exam_type', examType);
+      if (year) q = q.eq('year', year);
       q = q.order('percentage', { ascending: false });
       const { data, error } = await q;
       if (error) throw error;
