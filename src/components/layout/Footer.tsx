@@ -1,21 +1,19 @@
 import { Link } from 'react-router-dom';
-import { GraduationCap, Phone, Mail, MapPin } from 'lucide-react';
+import { Phone, Mail, MapPin } from 'lucide-react';
 import { useSchoolInfo } from '@/hooks/useSupabaseData';
+import SchoolLogo from '@/components/SchoolLogo';
 
 export default function Footer() {
   const { data: si } = useSchoolInfo();
-  const info = si || { name: 'GHS Babi Khel', full_name: 'Government High School Babi Khel', established: 1985, address: '', phone: '', email: '' };
+  const info = si || { name: 'GHS Babi Khel', full_name: 'Government High School Babi Khel', established: 2018, address: '', phone: '', email: '' } as any;
 
   return (
     <footer className="bg-foreground text-primary-foreground">
       <div className="container-main py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-                <GraduationCap className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="font-display font-bold text-lg">{info.name}</span>
+            <div className="mb-4">
+              <SchoolLogo size="md" />
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Empowering the next generation with quality education since {info.established}.

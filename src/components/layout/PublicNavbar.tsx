@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, GraduationCap } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
+import SchoolLogo from '@/components/SchoolLogo';
 
 const navLinks = [
   { name: 'Home', path: '/' },
@@ -35,11 +36,8 @@ export default function PublicNavbar() {
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'glass-header shadow-matte' : 'bg-transparent'}`}>
       <nav className="container-main">
         <div className="flex items-center justify-between h-16 md:h-18">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-display font-bold text-lg text-foreground">GHS Babi Khel</span>
+          <Link to="/">
+            <SchoolLogo size="md" />
           </Link>
 
           <div className="hidden lg:flex items-center gap-1">

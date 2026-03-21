@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { GraduationCap, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import SchoolLogo from '@/components/SchoolLogo';
 
 export default function SignUp() {
   const [name, setName] = useState('');
@@ -40,11 +41,8 @@ export default function SignUp() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-muted px-4">
       <div className="w-full max-w-md animate-in">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <GraduationCap className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <span className="font-display font-bold text-xl">GHS Babi Khel</span>
+          <Link to="/" className="inline-flex justify-center mb-6">
+            <SchoolLogo size="lg" />
           </Link>
           <h1 className="text-2xl font-display font-bold">Create Account</h1>
           <p className="text-muted-foreground text-sm mt-1">Join GHS Babi Khel community</p>

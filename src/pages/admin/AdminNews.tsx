@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { useNews, useMutateNews, NewsItem } from '@/hooks/useSupabaseData';
+import { useNews, useMutateNews, uploadFile, NewsItem } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,15 +15,21 @@ export default function AdminNews() {
   const [editing, setEditing] = useState<NewsItem | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({ title: '', excerpt: '', content: '' });
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const openAdd = () => { setEditing(null); setForm({ title: '', excerpt: '', content: '' }); setIsOpen(true); };
-  const openEdit = (n: NewsItem) => { setEditing(n); setForm({ title: n.title, excerpt: n.excerpt, content: n.content }); setIsOpen(true); };
+  const openAdd = () => { setEditing(null); setForm({ title: '', excerpt: '', content: '' }); setImageFile(null); setIsOpen(true); };
+  const openEdit = (n: NewsItem) => { setEditing(n); setForm({ title: n.title, excerpt: n.excerpt, content: n.content }); setImageFile(null); setIsOpen(true); };
 
   const handleSave = async () => {
     if (!form.title) return;
     try {
+      let image_url = editing?.image_url;
+      if (imageFile) {
+        image_url = await uploadFile('photos', `news/${Date.now()}_${imageFile.name}`, imageFile);
+      }
       await upsert.mutateAsync({
         ...form,
+        image_url,
         date: editing?.date || new Date().toISOString().split('T')[0],
         ...(editing ? { id: editing.id } : {}),
       });
@@ -53,6 +59,8 @@ export default function AdminNews() {
               <div><Label>Title</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className="mt-1" /></div>
               <div><Label>Excerpt</Label><Input value={form.excerpt} onChange={e => setForm(f => ({ ...f, excerpt: e.target.value }))} className="mt-1" /></div>
               <div><Label>Content</Label><Textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} className="mt-1" rows={4} /></div>
+              <div><Label>Image (optional)</Label><Input type="file" accept="image/*" onChange={e => setImageFile(e.target.files?.[0] || null)} className="mt-1" /></div>
+              {editing?.image_url && !imageFile && <img src={editing.image_url} alt="" className="h-20 rounded-lg object-cover" />}
               <Button onClick={handleSave} className="w-full btn-press" disabled={upsert.isPending}>{upsert.isPending ? 'Saving...' : 'Save'}</Button>
             </div>
           </DialogContent>
@@ -60,19 +68,22 @@ export default function AdminNews() {
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         {(news || []).map(n => (
-          <div key={n.id} className="card-matte p-5">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Newspaper className="w-4 h-4 text-primary" />
-                <span className="text-xs text-muted-foreground">{new Date(n.date).toLocaleDateString()}</span>
+          <div key={n.id} className="card-matte overflow-hidden">
+            {n.image_url && <img src={n.image_url} alt={n.title} className="w-full h-40 object-cover" />}
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Newspaper className="w-4 h-4 text-primary" />
+                  <span className="text-xs text-muted-foreground">{new Date(n.date).toLocaleDateString()}</span>
+                </div>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => openEdit(n)}><Pencil className="w-3.5 h-3.5" /></Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleDelete(n.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
+                </div>
               </div>
-              <div className="flex gap-1">
-                <Button variant="ghost" size="sm" onClick={() => openEdit(n)}><Pencil className="w-3.5 h-3.5" /></Button>
-                <Button variant="ghost" size="sm" onClick={() => handleDelete(n.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
-              </div>
+              <h3 className="font-display font-semibold text-sm">{n.title}</h3>
+              <p className="text-sm text-muted-foreground mt-1">{n.excerpt}</p>
             </div>
-            <h3 className="font-display font-semibold text-sm">{n.title}</h3>
-            <p className="text-sm text-muted-foreground mt-1">{n.excerpt}</p>
           </div>
         ))}
       </div>

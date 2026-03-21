@@ -57,6 +57,7 @@ const App = () => (
             <Route path="/news" element={<NewsPage />} />
             <Route path="/results" element={<ResultsPage />} />
             <Route path="/gallery" element={<GalleryPage />} />
+            <Route path="/gallery/:albumId" element={<GalleryPage />} />
             <Route path="/library" element={<LibraryPage />} />
             <Route path="/achievements" element={<AchievementsPage />} />
             <Route path="/videos" element={<VideosPage />} />
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/dashboard/news" element={<ProtectedRoute><DashboardNews /></ProtectedRoute>} />
             <Route path="/dashboard/library" element={<ProtectedRoute><DashboardLibrary /></ProtectedRoute>} />
             <Route path="/dashboard/gallery" element={<ProtectedRoute><DashboardGallery /></ProtectedRoute>} />
+            <Route path="/dashboard/gallery/:albumId" element={<ProtectedRoute><DashboardGallery /></ProtectedRoute>} />
             <Route path="/dashboard/videos" element={<ProtectedRoute><DashboardVideos /></ProtectedRoute>} />
             <Route path="/dashboard/achievements" element={<ProtectedRoute><DashboardAchievements /></ProtectedRoute>} />
             <Route path="/dashboard/teachers" element={<ProtectedRoute><DashboardTeachers /></ProtectedRoute>} />
@@ -81,6 +83,7 @@ const App = () => (
             <Route path="/admin/notices" element={<ProtectedRoute requiredRole="admin"><AdminNotices /></ProtectedRoute>} />
             <Route path="/admin/news" element={<ProtectedRoute requiredRole="admin"><AdminNews /></ProtectedRoute>} />
             <Route path="/admin/gallery" element={<ProtectedRoute requiredRole="admin"><AdminGallery /></ProtectedRoute>} />
+            <Route path="/admin/gallery/:albumId" element={<ProtectedRoute requiredRole="admin"><AdminGallery /></ProtectedRoute>} />
             <Route path="/admin/videos" element={<ProtectedRoute requiredRole="admin"><AdminVideos /></ProtectedRoute>} />
             <Route path="/admin/library" element={<ProtectedRoute requiredRole="admin"><AdminLibrary /></ProtectedRoute>} />
             <Route path="/admin/timetable" element={<ProtectedRoute requiredRole="admin"><AdminTimetable /></ProtectedRoute>} />
