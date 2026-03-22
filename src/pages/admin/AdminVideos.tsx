@@ -57,6 +57,8 @@ export default function AdminVideos() {
     try { await remove.mutateAsync(id); toast.success('Deleted'); } catch (e: any) { toast.error(e.message); }
   };
 
+  const filteredVideos = (videos || []).filter(v => filterCategory === 'all' || v.category === filterCategory);
+
   return (
     <DashboardLayout isAdmin>
       <div className="flex items-center justify-between mb-6">
@@ -89,8 +91,17 @@ export default function AdminVideos() {
           </DialogContent>
         </Dialog>
       </div>
+      <div className="mb-4">
+        <Select value={filterCategory} onValueChange={(v: 'all' | 'events' | 'lectures' | 'announcements') => setFilterCategory(v)}>
+          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {videoCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="grid sm:grid-cols-2 gap-4">
-        {(videos || []).map(v => {
+        {filteredVideos.map(v => {
           const embedUrl = v.youtube_url ? getYoutubeEmbedUrl(v.youtube_url) : null;
           return (
             <div key={v.id} className="card-matte overflow-hidden">
