@@ -1,6 +1,8 @@
+import { Link } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTeachers, useNotices, useResults, useLibrary, useSchoolInfo } from '@/hooks/useSupabaseData';
-import { Users, BookOpen, Bell, BarChart3, FileText } from 'lucide-react';
+import { Users, BookOpen, Bell, BarChart3, FileText, PlusCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function AdminOverview() {
   const { data: teachers } = useTeachers();
@@ -18,6 +20,12 @@ export default function AdminOverview() {
   ];
 
   const topResults = (results || []).filter(r => r.position <= 3 && r.class_name === '10th');
+  const quickActions = [
+    { label: 'Add Teacher', path: '/admin/teachers' },
+    { label: 'Add Notice', path: '/admin/notices' },
+    { label: 'Upload File', path: '/admin/library' },
+    { label: 'Publish Result', path: '/admin/results' },
+  ];
 
   return (
     <DashboardLayout isAdmin>
@@ -35,6 +43,18 @@ export default function AdminOverview() {
             <p className="text-xs text-muted-foreground">{s.label}</p>
           </div>
         ))}
+      </div>
+      <div className="card-matte p-5 mb-6">
+        <h3 className="font-display font-semibold mb-3">Quick Actions</h3>
+        <div className="flex flex-wrap gap-2">
+          {quickActions.map((action) => (
+            <Link key={action.path} to={action.path}>
+              <Button size="sm" variant="outline" className="btn-press gap-1">
+                <PlusCircle className="w-3.5 h-3.5" /> {action.label}
+              </Button>
+            </Link>
+          ))}
+        </div>
       </div>
       <div className="grid md:grid-cols-2 gap-6">
         <div className="card-matte p-6">

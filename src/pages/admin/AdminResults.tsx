@@ -14,7 +14,6 @@ const examTypes: Record<string, string[]> = {
   '6th': ['1st Semester', '2nd Semester'], '7th': ['1st Semester', '2nd Semester'], '8th': ['1st Semester', '2nd Semester'],
   '9th': ['Annual-I', 'Annual-II'], '10th': ['Annual-I', 'Annual-II'],
 };
-const years = ['2024', '2025', '2026'];
 
 function PositionBadge({ position }: { position: number }) {
   if (position === 1) return <span className="badge-gold">🥇 1st</span>;
@@ -26,8 +25,8 @@ function PositionBadge({ position }: { position: number }) {
 export default function AdminResults() {
   const [selectedClass, setSelectedClass] = useState('10th');
   const [selectedExam, setSelectedExam] = useState('Annual-I');
-  const [selectedYear, setSelectedYear] = useState('2026');
-  const { data: results } = useResults(selectedClass, selectedExam, selectedYear);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const { data: results } = useResults(selectedClass, selectedExam, selectedYear || undefined);
   const { upsert, remove } = useMutateResult();
   const [editing, setEditing] = useState<StudentResult | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -35,6 +34,7 @@ export default function AdminResults() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   const filtered = results || [];
+  const yearOptions = Array.from(new Set((results || []).map(r => r.year).filter(Boolean))).sort().reverse();
   const totalStudents = filtered.length;
   const passed = filtered.filter(r => Number(r.percentage) >= 33).length;
   const failed = totalStudents - passed;
@@ -79,6 +79,7 @@ export default function AdminResults() {
     { icon: BarChart3, label: 'Pass %', value: totalStudents ? `${((passed / totalStudents) * 100).toFixed(0)}%` : '0%', color: 'bg-accent text-accent-foreground' },
     { icon: TrendingUp, label: 'Highest', value: `${highest.toFixed(1)}%`, color: 'bg-primary/10 text-primary' },
     { icon: TrendingDown, label: 'Lowest', value: `${lowest.toFixed(1)}%`, color: 'bg-muted text-muted-foreground' },
+    { icon: BarChart3, label: 'Average', value: `${average.toFixed(1)}%`, color: 'bg-accent text-accent-foreground' },
   ];
 
   return (
@@ -118,13 +119,22 @@ export default function AdminResults() {
           <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>{examTypes[selectedClass].map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
         </Select>
-        <Select value={selectedYear} onValueChange={setSelectedYear}>
-          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-          <SelectContent>{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
-        </Select>
+        <div>
+          <Input
+            type="number"
+            list="result-year-options-admin"
+            value={selectedYear}
+            onChange={e => setSelectedYear(e.target.value)}
+            className="w-32"
+            placeholder="Year"
+          />
+          <datalist id="result-year-options-admin">
+            {yearOptions.map(y => <option key={y} value={y} />)}
+          </datalist>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 mb-6">
         {summaryCards.map(s => (
           <div key={s.label} className="card-matte p-4 text-center">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-2 ${s.color}`}>
@@ -144,6 +154,7 @@ export default function AdminResults() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Rank</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Student</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Roll #</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Year</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Marks</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">%</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Actions</th>
@@ -164,6 +175,7 @@ export default function AdminResults() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground tabular-nums">{r.roll_number}</td>
+                  <td className="px-4 py-3 text-muted-foreground tabular-nums">{r.year || '-'}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{r.obtained_marks}/{r.total_marks}</td>
                   <td className="px-4 py-3 text-right font-semibold tabular-nums">{Number(r.percentage).toFixed(1)}%</td>
                   <td className="px-4 py-3 text-right">

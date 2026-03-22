@@ -26,7 +26,7 @@ export default function DashboardLibrary() {
                   <span className="text-xs px-2 py-0.5 rounded-full bg-accent text-accent-foreground uppercase">{item.file_type}</span>
                 </div>
                 {item.file_url ? (
-                  <a href={item.file_url} target="_blank" rel="noopener noreferrer">
+                  <a href={item.file_url} target="_blank" rel="noopener noreferrer" download>
                     <Button size="sm" variant="outline" className="btn-press gap-1 text-xs mt-3"><Download className="w-3 h-3" /> Download</Button>
                   </a>
                 ) : (

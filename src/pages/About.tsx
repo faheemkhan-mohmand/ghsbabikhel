@@ -7,7 +7,8 @@ const fadeUp = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0
 
 export default function About() {
   const { data: si } = useSchoolInfo();
-  const info = si || { name: 'GHS Babi Khel', full_name: 'Government High School Babi Khel', description: '', mission: '', vision: '', total_students: 0, total_teachers: 0, pass_rate: 0, established: 1985 };
+  const info = si || { name: 'GHS Babi Khel', full_name: 'Government High School Babi Khel', description: '', mission: '', vision: '', total_students: 0, total_teachers: 0, pass_rate: 0, established_year: 2018 };
+  const establishedYear = (info as any).established_year ?? (info as any).established ?? 2018;
 
   return (
     <PublicLayout>
@@ -34,7 +35,7 @@ export default function About() {
               { icon: Users, label: 'Students', value: `${info.total_students}+` },
               { icon: BookOpen, label: 'Educators', value: `${info.total_teachers}` },
               { icon: Award, label: 'Pass Rate', value: `${info.pass_rate}%` },
-              { icon: Calendar, label: 'Since', value: `${info.established}` },
+              { icon: Calendar, label: 'Since', value: `${establishedYear}` },
             ].map((stat, i) => (
               <motion.div key={stat.label} {...fadeUp} transition={{ delay: i * 0.1 }} className="card-matte p-6 text-center">
                 <stat.icon className="w-6 h-6 text-primary mx-auto mb-2" />

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useResults, initials } from '@/hooks/useSupabaseData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Trophy, Users, BarChart3, TrendingUp, TrendingDown, XCircle, Calculator } from 'lucide-react';
 
 const classes = ['6th', '7th', '8th', '9th', '10th'];
@@ -9,7 +10,6 @@ const examTypes: Record<string, string[]> = {
   '6th': ['1st Semester', '2nd Semester'], '7th': ['1st Semester', '2nd Semester'], '8th': ['1st Semester', '2nd Semester'],
   '9th': ['Annual-I', 'Annual-II'], '10th': ['Annual-I', 'Annual-II'],
 };
-const years = ['2024', '2025', '2026'];
 
 function PositionBadge({ position }: { position: number }) {
   if (position === 1) return <span className="badge-gold">🥇 1st</span>;
@@ -21,10 +21,11 @@ function PositionBadge({ position }: { position: number }) {
 export default function DashboardResults() {
   const [selectedClass, setSelectedClass] = useState('10th');
   const [selectedExam, setSelectedExam] = useState('Annual-I');
-  const [selectedYear, setSelectedYear] = useState('2026');
-  const { data: results, isLoading } = useResults(selectedClass, selectedExam, selectedYear);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const { data: allResults, isLoading } = useResults(selectedClass, selectedExam);
 
-  const filtered = results || [];
+  const yearOptions = Array.from(new Set((allResults || []).map(r => r.year).filter(Boolean))).sort().reverse();
+  const filtered = (allResults || []).filter(r => !selectedYear || r.year === selectedYear);
   const totalStudents = filtered.length;
   const passed = filtered.filter(r => Number(r.percentage) >= 33).length;
   const failed = totalStudents - passed;
@@ -57,10 +58,19 @@ export default function DashboardResults() {
           <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>{examTypes[selectedClass].map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
         </Select>
-        <Select value={selectedYear} onValueChange={setSelectedYear}>
-          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-          <SelectContent>{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
-        </Select>
+        <div>
+          <Input
+            type="number"
+            list="result-year-options-dashboard"
+            value={selectedYear}
+            onChange={e => setSelectedYear(e.target.value)}
+            className="w-32"
+            placeholder="Year"
+          />
+          <datalist id="result-year-options-dashboard">
+            {yearOptions.map(y => <option key={y} value={y} />)}
+          </datalist>
+        </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
         {summaryCards.map(s => (
@@ -81,6 +91,7 @@ export default function DashboardResults() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Rank</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Student</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Roll #</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Year</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Marks</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">%</th>
               </tr>
@@ -100,6 +111,7 @@ export default function DashboardResults() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground tabular-nums">{r.roll_number}</td>
+                  <td className="px-4 py-3 text-muted-foreground tabular-nums">{r.year || '-'}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{r.obtained_marks}/{r.total_marks}</td>
                   <td className="px-4 py-3 text-right font-semibold tabular-nums">{Number(r.percentage).toFixed(1)}%</td>
                 </tr>

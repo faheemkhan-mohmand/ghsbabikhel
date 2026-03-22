@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -66,7 +67,10 @@ export interface TimetableEntry {
   class_name: string;
   day: string;
   period: number;
-  time: string;
+  period_name?: string;
+  start_time?: string;
+  end_time?: string;
+  time?: string;
   subject: string;
   teacher: string;
 }
@@ -106,7 +110,8 @@ export interface SchoolInfo {
   total_students: number;
   pass_rate: number;
   total_teachers: number;
-  established: number;
+  established_year: number;
+  established?: number;
   address: string;
   phone: string;
   email: string;
@@ -121,6 +126,7 @@ export interface VideoItem {
   id: string;
   title: string;
   description: string;
+  category?: 'events' | 'lectures' | 'announcements';
   video_url?: string;
   youtube_url?: string;
   created_at?: string;
@@ -129,7 +135,7 @@ export interface VideoItem {
 export interface Notification {
   id: string;
   user_id?: string;
-  type: 'notice' | 'result' | 'news' | 'library' | 'general';
+  type: 'notice' | 'result' | 'news' | 'library' | 'video' | 'general';
   message: string;
   is_read: boolean;
   created_at: string;
@@ -138,6 +144,18 @@ export interface Notification {
 // =================== HELPERS ===================
 function initials(name: string) {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+}
+
+async function createBroadcastNotification(type: Notification['type'], message: string) {
+  const { error } = await supabase.from('notifications').insert({
+    type,
+    message,
+    user_id: null,
+    is_read: false,
+  });
+  if (error) {
+    console.warn('Notification create skipped:', error.message);
+  }
 }
 
 // =================== TEACHERS ===================
@@ -198,6 +216,9 @@ export function useMutateNotice() {
       } else {
         const { error } = await supabase.from('notices').insert(notice);
         if (error) throw error;
+        if (notice.title) {
+          await createBroadcastNotification('notice', `New notice: ${notice.title}`);
+        }
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['notices'] }); },
@@ -339,6 +360,9 @@ export function useMutateLibrary() {
       } else {
         const { error } = await supabase.from('library_files').insert(item);
         if (error) throw error;
+        if (item.title) {
+          await createBroadcastNotification('library', `New library upload: ${item.title}`);
+        }
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['library'] }); },
@@ -372,22 +396,60 @@ export function useTimetable(className: string) {
 
 export function useMutateTimetable() {
   const qc = useQueryClient();
+
+  const normalizeLegacyTime = (entry: Partial<TimetableEntry>) => {
+    const start = entry.start_time?.trim() || '';
+    const end = entry.end_time?.trim() || '';
+    const legacy = entry.time?.trim() || '';
+    return {
+      ...entry,
+      time: start || end ? `${start} - ${end}`.trim() : legacy,
+      period_name: entry.period_name || (entry.period ? `P${entry.period}` : undefined),
+    };
+  };
+
   const upsert = useMutation({
     mutationFn: async (entry: Partial<TimetableEntry> & { id?: string }) => {
+      const payload = normalizeLegacyTime(entry);
       if (entry.id) {
-        const { error } = await supabase.from('timetable').update(entry).eq('id', entry.id);
-        if (error) throw error;
+        const { error } = await supabase.from('timetable').update(payload).eq('id', entry.id);
+        if (error) {
+          if (/period_name|start_time|end_time/.test(error.message || '')) {
+            const { period_name, start_time, end_time, ...legacyPayload } = payload;
+            const { error: fallbackError } = await supabase.from('timetable').update(legacyPayload).eq('id', entry.id);
+            if (fallbackError) throw fallbackError;
+          } else {
+            throw error;
+          }
+        }
       } else {
-        const { error } = await supabase.from('timetable').insert(entry);
-        if (error) throw error;
+        const { error } = await supabase.from('timetable').insert(payload);
+        if (error) {
+          if (/period_name|start_time|end_time/.test(error.message || '')) {
+            const { period_name, start_time, end_time, ...legacyPayload } = payload;
+            const { error: fallbackError } = await supabase.from('timetable').insert(legacyPayload);
+            if (fallbackError) throw fallbackError;
+          } else {
+            throw error;
+          }
+        }
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['timetable'] }); },
   });
   const bulkUpsert = useMutation({
     mutationFn: async (entries: Partial<TimetableEntry>[]) => {
-      const { error } = await supabase.from('timetable').upsert(entries as any);
-      if (error) throw error;
+      const payload = entries.map(normalizeLegacyTime);
+      const { error } = await supabase.from('timetable').upsert(payload as any);
+      if (error) {
+        if (/period_name|start_time|end_time/.test(error.message || '')) {
+          const legacyPayload = payload.map(({ period_name, start_time, end_time, ...rest }) => rest);
+          const { error: fallbackError } = await supabase.from('timetable').upsert(legacyPayload as any);
+          if (fallbackError) throw fallbackError;
+        } else {
+          throw error;
+        }
+      }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['timetable'] }); },
   });
@@ -424,6 +486,10 @@ export function useMutateResult() {
         const { id, ...insertPayload } = rest;
         const { error } = await supabase.from('results').insert(insertPayload);
         if (error) throw error;
+        await createBroadcastNotification(
+          'result',
+          `New result published: ${insertPayload.class_name} ${insertPayload.exam_type}${insertPayload.year ? ` (${insertPayload.year})` : ''}`,
+        );
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['results'] }); },
@@ -491,12 +557,30 @@ export function useMutateSchoolInfo() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (info: Partial<SchoolInfo> & { id?: string }) => {
-      if (info.id) {
-        const { error } = await supabase.from('school_info').update(info).eq('id', info.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('school_info').insert(info);
-        if (error) throw error;
+      const payload = {
+        ...info,
+        established: (info as any).established_year ?? info.established,
+      } as any;
+
+      const persist = async (input: any) => {
+        if (input.id) {
+          const { error } = await supabase.from('school_info').update(input).eq('id', input.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from('school_info').insert(input);
+          if (error) throw error;
+        }
+      };
+
+      try {
+        await persist(payload);
+      } catch (error: any) {
+        if (/established_year/.test(error?.message || '')) {
+          const { established_year, ...legacyPayload } = payload;
+          await persist(legacyPayload);
+        } else {
+          throw error;
+        }
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['school_info'] }); },
@@ -526,6 +610,9 @@ export function useMutateVideo() {
         const { id, ...payload } = item as any;
         const { error } = await supabase.from('videos').insert(payload);
         if (error) throw error;
+        if (item.title) {
+          await createBroadcastNotification('video', `New video uploaded: ${item.title}`);
+        }
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['videos'] }); },
@@ -542,6 +629,32 @@ export function useMutateVideo() {
 
 // =================== NOTIFICATIONS ===================
 export function useNotifications(userId?: string) {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel(`notifications-${userId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications' },
+        (payload) => {
+          const next = payload.new as any;
+          const prev = payload.old as any;
+          const touchesUser = [next?.user_id, prev?.user_id].some((id) => id === null || id === userId);
+          if (touchesUser) {
+            qc.invalidateQueries({ queryKey: ['notifications', userId] });
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc, userId]);
+
   return useQuery({
     queryKey: ['notifications', userId],
     queryFn: async () => {
@@ -556,7 +669,7 @@ export function useNotifications(userId?: string) {
       return (data || []) as Notification[];
     },
     enabled: !!userId,
-    refetchInterval: 30000,
+    refetchInterval: 10000,
   });
 }
 
@@ -588,7 +701,14 @@ export function useMutateNotification() {
 
 // =================== FILE UPLOAD ===================
 export async function uploadFile(bucket: string, path: string, file: File) {
-  const { data, error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
+  const cleanedPath = path
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zA-Z0-9/_.-]/g, '');
+
+  const attemptPath = `${cleanedPath}_${Math.random().toString(36).slice(2, 8)}`;
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(attemptPath, file, { cacheControl: '3600', upsert: false, contentType: file.type || undefined });
   if (error) throw error;
   const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(data.path);
   return urlData.publicUrl;

@@ -5,14 +5,28 @@ import { FileText, FileIcon, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 const fadeUp = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.5 } };
 
 export default function LibraryPage() {
+  const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
+  const [classFilter, setClassFilter] = useState('all');
+  const [subjectFilter, setSubjectFilter] = useState('all');
   const { data: library } = useLibrary();
   const items = library || [];
-  const filtered = filter === 'all' ? items : items.filter(item => item.category === filter);
+  const classOptions = Array.from(new Set(items.map(i => i.class_level).filter(Boolean))).sort();
+  const subjectOptions = Array.from(new Set(items.map(i => i.subject).filter(Boolean))).sort();
+
+  const filtered = items.filter((item) => {
+    const matchesCategory = filter === 'all' || item.category === filter;
+    const matchesClass = classFilter === 'all' || item.class_level === classFilter;
+    const matchesSubject = subjectFilter === 'all' || item.subject === subjectFilter;
+    const term = search.toLowerCase().trim();
+    const matchesSearch = !term || [item.title, item.subject, item.class_level, item.category].some(v => (v || '').toLowerCase().includes(term));
+    return matchesCategory && matchesClass && matchesSubject && matchesSearch;
+  });
 
   return (
     <PublicLayout>
@@ -22,14 +36,29 @@ export default function LibraryPage() {
             <h1 className="text-4xl font-display font-extrabold mb-4">Digital Library</h1>
             <p className="text-muted-foreground text-lg">Access past papers, books, and notes</p>
           </motion.div>
-          <div className="flex justify-center mb-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title, class, subject..." />
             <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Filter by" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Resources</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 <SelectItem value="past-paper">Past Papers</SelectItem>
                 <SelectItem value="book">Books</SelectItem>
                 <SelectItem value="notes">Notes</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={classFilter} onValueChange={setClassFilter}>
+              <SelectTrigger><SelectValue placeholder="Class" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Classes</SelectItem>
+                {classOptions.map(c => <SelectItem key={c} value={c}>Class {c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={subjectFilter} onValueChange={setSubjectFilter}>
+              <SelectTrigger><SelectValue placeholder="Subject" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Subjects</SelectItem>
+                {subjectOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -49,7 +78,7 @@ export default function LibraryPage() {
                     </div>
                     <div className="mt-4">
                       {item.file_url ? (
-                        <a href={item.file_url} target="_blank" rel="noopener noreferrer">
+                        <a href={item.file_url} target="_blank" rel="noopener noreferrer" download>
                           <Button size="sm" variant="outline" className="btn-press gap-1 text-xs"><Download className="w-3 h-3" /> Download</Button>
                         </a>
                       ) : (

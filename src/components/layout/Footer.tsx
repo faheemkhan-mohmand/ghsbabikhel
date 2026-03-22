@@ -5,7 +5,8 @@ import SchoolLogo from '@/components/SchoolLogo';
 
 export default function Footer() {
   const { data: si } = useSchoolInfo();
-  const info = si || { name: 'GHS Babi Khel', full_name: 'Government High School Babi Khel', established: 2018, address: '', phone: '', email: '' } as any;
+  const info = si || { name: 'GHS Babi Khel', full_name: 'Government High School Babi Khel', established_year: 2018, address: '', phone: '', email: '' } as any;
+  const establishedYear = info.established_year ?? info.established ?? 2018;
 
   return (
     <footer className="bg-foreground text-primary-foreground">
@@ -16,7 +17,7 @@ export default function Footer() {
               <SchoolLogo size="md" />
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Empowering the next generation with quality education since {info.established}.
+              Empowering the next generation with quality education since {establishedYear}.
             </p>
           </div>
           <div>

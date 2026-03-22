@@ -12,7 +12,7 @@ export default function AdminSchoolInfo() {
   const mutation = useMutateSchoolInfo();
   const [info, setInfo] = useState({
     id: '', name: '', full_name: '', description: '', mission: '', vision: '',
-    phone: '', email: '', address: '', total_students: 0, pass_rate: 0, total_teachers: 0, established: 1985,
+    phone: '', email: '', address: '', total_students: 0, pass_rate: 0, total_teachers: 0, established_year: 2018,
     logo_url: '', banner_url: '', principal_name: '', principal_message: '', principal_photo_url: '',
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -20,7 +20,13 @@ export default function AdminSchoolInfo() {
   const [principalFile, setPrincipalFile] = useState<File | null>(null);
 
   useEffect(() => {
-    if (si) setInfo(prev => ({ ...prev, ...si } as any));
+    if (si) {
+      setInfo(prev => ({
+        ...prev,
+        ...si,
+        established_year: (si as any).established_year ?? (si as any).established ?? 2018,
+      } as any));
+    }
   }, [si]);
 
   const handleSave = async () => {
@@ -32,7 +38,7 @@ export default function AdminSchoolInfo() {
       if (bannerFile) banner_url = await uploadFile('photos', `school/banner_${Date.now()}`, bannerFile);
       if (principalFile) principal_photo_url = await uploadFile('photos', `school/principal_${Date.now()}`, principalFile);
 
-      mutation.mutate({ ...info, logo_url, banner_url, principal_photo_url }, {
+      mutation.mutate({ ...info, logo_url, banner_url, principal_photo_url, established_year: Number(info.established_year) || 2018 }, {
         onSuccess: () => toast.success('School info saved!'),
         onError: (e) => toast.error(e.message),
       });
@@ -61,10 +67,11 @@ export default function AdminSchoolInfo() {
             <div><Label>Email</Label><Input value={info.email} onChange={e => setInfo(i => ({ ...i, email: e.target.value }))} className="mt-1" /></div>
           </div>
           <div><Label>Address</Label><Input value={info.address} onChange={e => setInfo(i => ({ ...i, address: e.target.value }))} className="mt-1" /></div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div><Label>Total Students</Label><Input type="number" value={info.total_students} onChange={e => setInfo(i => ({ ...i, total_students: parseInt(e.target.value) || 0 }))} className="mt-1" /></div>
             <div><Label>Total Teachers</Label><Input type="number" value={info.total_teachers} onChange={e => setInfo(i => ({ ...i, total_teachers: parseInt(e.target.value) || 0 }))} className="mt-1" /></div>
             <div><Label>Pass Rate %</Label><Input type="number" value={info.pass_rate} onChange={e => setInfo(i => ({ ...i, pass_rate: parseInt(e.target.value) || 0 }))} className="mt-1" /></div>
+            <div><Label>Established Year</Label><Input type="number" value={info.established_year} onChange={e => setInfo(i => ({ ...i, established_year: parseInt(e.target.value) || 2018 }))} className="mt-1" /></div>
           </div>
         </div>
 
