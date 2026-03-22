@@ -10,12 +10,27 @@ export default function DashboardTimetable() {
   const [selectedClass, setSelectedClass] = useState('6th');
   const { data: entries, isLoading } = useTimetable(selectedClass);
 
+  const parseLegacyTime = (time?: string) => {
+    if (!time) return { start: '', end: '' };
+    const [start, end] = time.split('-').map((v) => v?.trim() || '');
+    return { start, end };
+  };
+
   const periods = useMemo(() => {
     if (!entries || entries.length === 0) return [];
     const uniquePeriods = [...new Set(entries.map(e => e.period))].sort((a, b) => a - b);
     return uniquePeriods.map(p => {
       const entry = entries.find(e => e.period === p);
-      return { period: p, time: entry?.time || '' };
+      const legacy = parseLegacyTime(entry?.time);
+      const start = entry?.start_time || legacy.start;
+      const end = entry?.end_time || legacy.end;
+      return {
+        period: p,
+        period_name: entry?.period_name || `P${p}`,
+        start_time: start,
+        end_time: end,
+        time: start && end ? `${start} - ${end}` : (entry?.time || ''),
+      };
     });
   }, [entries]);
 
@@ -47,8 +62,8 @@ export default function DashboardTimetable() {
                 <tr className="bg-muted/50 border-b border-border">
                   <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Day</th>
                   {periods.map(p => (
-                    <th key={p.period} className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">
-                      <div>P{p.period}</div>
+                    <th key={p.period} className={`px-3 py-3 text-center text-xs font-semibold text-muted-foreground uppercase ${p.period === 7 ? 'border-l border-border/70' : ''}`}>
+                      <div>{p.period_name}</div>
                       <div className="font-normal text-[10px] mt-0.5">{p.time}</div>
                     </th>
                   ))}
@@ -60,8 +75,9 @@ export default function DashboardTimetable() {
                     <td className="px-4 py-3 font-medium whitespace-nowrap">{day}</td>
                     {periods.map(p => {
                       const entry = getEntry(day, p.period);
+                      const isBreak = p.period === 7 || /break/i.test(p.period_name || '') || /break/i.test(entry?.subject || '');
                       return (
-                        <td key={p.period} className={`px-3 py-3 text-center ${entry?.subject === 'Break' ? 'bg-muted/50 text-muted-foreground italic' : ''}`}>
+                        <td key={p.period} className={`px-3 py-3 text-center ${isBreak ? 'bg-muted/50 text-muted-foreground italic' : ''}`}>
                           <div className="font-medium text-xs">{entry?.subject || '-'}</div>
                           {entry?.teacher && entry.teacher !== '-' && <div className="text-[10px] text-muted-foreground mt-0.5">{entry.teacher}</div>}
                         </td>
