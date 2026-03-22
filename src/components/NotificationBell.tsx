@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Check, FileText, Newspaper, ClipboardList, BarChart3, BookOpen } from 'lucide-react';
+import { Bell, Check, FileText, Newspaper, ClipboardList, BarChart3, BookOpen, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNotifications, useMutateNotification } from '@/hooks/useSupabaseData';
@@ -10,6 +10,7 @@ const iconMap: Record<string, React.ElementType> = {
   result: BarChart3,
   news: Newspaper,
   library: BookOpen,
+  video: Video,
   general: FileText,
 };
 
