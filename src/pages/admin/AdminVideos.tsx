@@ -73,6 +73,15 @@ export default function AdminVideos() {
             <div className="space-y-4">
               <div><Label>Title</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className="mt-1" /></div>
               <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="mt-1" rows={3} /></div>
+              <div>
+                <Label>Category</Label>
+                <Select value={form.category} onValueChange={(v: 'events' | 'lectures' | 'announcements') => setForm(f => ({ ...f, category: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {videoCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               <div><Label>YouTube URL (optional)</Label><Input value={form.youtube_url} onChange={e => setForm(f => ({ ...f, youtube_url: e.target.value }))} placeholder="https://youtube.com/watch?v=..." className="mt-1" /></div>
               <div><Label>Or Upload Video</Label><Input type="file" accept="video/*" onChange={e => setVideoFile(e.target.files?.[0] || null)} className="mt-1" /></div>
               <Button onClick={handleSave} className="w-full btn-press" disabled={upsert.isPending}>{upsert.isPending ? 'Saving...' : 'Save'}</Button>
