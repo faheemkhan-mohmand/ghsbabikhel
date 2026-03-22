@@ -26,11 +26,12 @@ export default function AdminVideos() {
   const { upsert, remove } = useMutateVideo();
   const [editing, setEditing] = useState<VideoItem | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', youtube_url: '' });
+  const [filterCategory, setFilterCategory] = useState<'all' | 'events' | 'lectures' | 'announcements'>('all');
+  const [form, setForm] = useState({ title: '', description: '', youtube_url: '', category: 'events' as 'events' | 'lectures' | 'announcements' });
   const [videoFile, setVideoFile] = useState<File | null>(null);
 
-  const openAdd = () => { setEditing(null); setForm({ title: '', description: '', youtube_url: '' }); setVideoFile(null); setIsOpen(true); };
-  const openEdit = (v: VideoItem) => { setEditing(v); setForm({ title: v.title, description: v.description || '', youtube_url: v.youtube_url || '' }); setVideoFile(null); setIsOpen(true); };
+  const openAdd = () => { setEditing(null); setForm({ title: '', description: '', youtube_url: '', category: 'events' }); setVideoFile(null); setIsOpen(true); };
+  const openEdit = (v: VideoItem) => { setEditing(v); setForm({ title: v.title, description: v.description || '', youtube_url: v.youtube_url || '', category: (v.category as any) || 'events' }); setVideoFile(null); setIsOpen(true); };
 
   const handleSave = async () => {
     if (!form.title) return;
