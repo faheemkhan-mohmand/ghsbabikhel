@@ -43,6 +43,7 @@ export default function AdminVideos() {
       await upsert.mutateAsync({
         title: form.title,
         description: form.description,
+        category: form.category,
         youtube_url: form.youtube_url || undefined,
         video_url,
         ...(editing ? { id: editing.id } : {}),
