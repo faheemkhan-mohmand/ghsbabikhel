@@ -3,6 +3,7 @@ import PublicLayout from '@/components/layout/PublicLayout';
 import { useResults, initials } from '@/hooks/useSupabaseData';
 import { motion } from 'framer-motion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Trophy, Users, BarChart3 } from 'lucide-react';
 
 const fadeUp = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.5 } };
@@ -23,9 +24,11 @@ function PositionBadge({ position }: { position: number }) {
 export default function ResultsPage() {
   const [selectedClass, setSelectedClass] = useState('10th');
   const [selectedExam, setSelectedExam] = useState('Annual-I');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const { data: results, isLoading } = useResults(selectedClass, selectedExam);
 
-  const filtered = results || [];
+  const yearOptions = Array.from(new Set((results || []).map(r => r.year).filter(Boolean))).sort().reverse();
+  const filtered = (results || []).filter(r => !selectedYear || r.year === selectedYear);
   const totalStudents = filtered.length;
   const passed = filtered.filter(r => Number(r.percentage) >= 33).length;
   const passPercentage = totalStudents > 0 ? ((passed / totalStudents) * 100).toFixed(1) : '0';
@@ -47,6 +50,19 @@ export default function ResultsPage() {
               <SelectTrigger className="w-48"><SelectValue placeholder="Select Exam" /></SelectTrigger>
               <SelectContent>{examTypes[selectedClass].map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
             </Select>
+            <div>
+              <Input
+                type="number"
+                list="result-year-options-public"
+                value={selectedYear}
+                onChange={e => setSelectedYear(e.target.value)}
+                className="w-32"
+                placeholder="Year"
+              />
+              <datalist id="result-year-options-public">
+                {yearOptions.map(y => <option key={y} value={y} />)}
+              </datalist>
+            </div>
           </div>
           <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto mb-10">
             {[
@@ -70,6 +86,7 @@ export default function ResultsPage() {
                       <th className="text-left px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Position</th>
                       <th className="text-left px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Student</th>
                       <th className="text-left px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Roll #</th>
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Year</th>
                       <th className="text-right px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Obtained</th>
                       <th className="text-right px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total</th>
                       <th className="text-right px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Percentage</th>
@@ -86,6 +103,7 @@ export default function ResultsPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-muted-foreground tabular-nums">{r.roll_number}</td>
+                        <td className="px-6 py-4 text-sm text-muted-foreground tabular-nums">{r.year || '-'}</td>
                         <td className="px-6 py-4 text-sm text-right font-medium tabular-nums">{r.obtained_marks}</td>
                         <td className="px-6 py-4 text-sm text-right text-muted-foreground tabular-nums">{r.total_marks}</td>
                         <td className="px-6 py-4 text-right">
