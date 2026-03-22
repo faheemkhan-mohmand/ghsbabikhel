@@ -117,6 +117,7 @@ export default function AdminVideos() {
               <div className="p-4 flex items-start justify-between">
                 <div>
                   <h3 className="font-display font-semibold text-sm">{v.title}</h3>
+                  {v.category && <p className="text-[11px] text-primary mt-1 capitalize">{v.category}</p>}
                   {v.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{v.description}</p>}
                 </div>
                 <div className="flex gap-1 shrink-0">
