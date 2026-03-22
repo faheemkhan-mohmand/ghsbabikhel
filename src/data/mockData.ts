@@ -187,7 +187,7 @@ export const schoolInfo = {
   totalStudents: 1200,
   passRate: 98,
   totalTeachers: 45,
-  established: 1985,
+  established: 2018,
   address: 'Babi Khel, Khyber Pakhtunkhwa, Pakistan',
   phone: '+92-XXX-XXXXXXX',
   email: 'info@ghsbabikhel.edu.pk',
