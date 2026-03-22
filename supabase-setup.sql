@@ -49,7 +49,7 @@ create table public.school_info (
     total_students integer default 1200,
     pass_rate integer default 98,
     total_teachers integer default 45,
-    established integer default 1985,
+    established integer default 2018,
     address text,
     phone text,
     email text,
@@ -69,7 +69,7 @@ values (
   'Government High School Babi Khel is a prestigious educational institution committed to providing quality education and nurturing the potential of every student.',
   'To provide quality education that empowers students with knowledge, skills, and values necessary for success in life.',
   'To be the leading educational institution in the region, known for academic excellence and holistic student development.',
-  1200, 98, 45, 1985,
+  1200, 98, 45, 2018,
   'Babi Khel, Khyber Pakhtunkhwa, Pakistan',
   '+92-XXX-XXXXXXX',
   'info@ghsbabikhel.edu.pk'
@@ -364,3 +364,99 @@ insert into public.timetable (class_name, day, period, time, subject, teacher) v
   ('6th', 'Saturday', 6, '11:00 - 11:40', 'Urdu', 'F. Rahim'),
   ('6th', 'Saturday', 7, '11:40 - 12:20', 'Social Studies', 'A. Wahab'),
   ('6th', 'Saturday', 8, '12:20 - 1:00', '-', '-');
+
+-- =============================================
+-- PATCHES FOR LATEST APP VERSION (SAFE TO RE-RUN)
+-- =============================================
+
+-- School established year normalization
+alter table public.school_info add column if not exists established_year integer;
+update public.school_info
+set established_year = coalesce(established_year, established, 2018)
+where established_year is null;
+alter table public.school_info alter column established_year set default 2018;
+
+-- Results year (dynamic manual input support)
+alter table public.results add column if not exists year text;
+
+-- Timetable dynamic periods metadata
+alter table public.timetable add column if not exists period_name text;
+alter table public.timetable add column if not exists start_time text;
+alter table public.timetable add column if not exists end_time text;
+
+update public.timetable
+set period_name = coalesce(period_name, case when period = 7 then 'Break' else concat('P', period) end),
+    start_time = coalesce(start_time, split_part(time, ' - ', 1)),
+    end_time = coalesce(end_time, split_part(time, ' - ', 2))
+where period_name is null or start_time is null or end_time is null;
+
+-- Videos table
+create table if not exists public.videos (
+    id uuid primary key default gen_random_uuid(),
+    title text not null,
+    description text,
+    category text default 'events' check (category in ('events', 'lectures', 'announcements')),
+    video_url text,
+    youtube_url text,
+    created_at timestamptz default now()
+);
+
+alter table public.videos enable row level security;
+drop policy if exists "Anyone can read videos" on public.videos;
+drop policy if exists "Admins can insert videos" on public.videos;
+drop policy if exists "Admins can update videos" on public.videos;
+drop policy if exists "Admins can delete videos" on public.videos;
+create policy "Anyone can read videos" on public.videos for select using (true);
+create policy "Admins can insert videos" on public.videos for insert to authenticated with check (public.has_role(auth.uid(), 'admin'));
+create policy "Admins can update videos" on public.videos for update to authenticated using (public.has_role(auth.uid(), 'admin'));
+create policy "Admins can delete videos" on public.videos for delete to authenticated using (public.has_role(auth.uid(), 'admin'));
+
+-- Notifications table
+create table if not exists public.notifications (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid references auth.users(id) on delete cascade,
+    type text not null check (type in ('notice', 'result', 'news', 'library', 'video', 'general')),
+    message text not null,
+    is_read boolean not null default false,
+    created_at timestamptz default now()
+);
+
+alter table public.notifications enable row level security;
+drop policy if exists "Users can read own/global notifications" on public.notifications;
+drop policy if exists "Users can mark own/global notifications read" on public.notifications;
+drop policy if exists "Admins can insert notifications" on public.notifications;
+drop policy if exists "Admins can delete notifications" on public.notifications;
+create policy "Users can read own/global notifications"
+on public.notifications for select to authenticated
+using (user_id is null or user_id = auth.uid());
+create policy "Users can mark own/global notifications read"
+on public.notifications for update to authenticated
+using (user_id is null or user_id = auth.uid())
+with check (user_id is null or user_id = auth.uid());
+create policy "Admins can insert notifications"
+on public.notifications for insert to authenticated
+with check (public.has_role(auth.uid(), 'admin'));
+create policy "Admins can delete notifications"
+on public.notifications for delete to authenticated
+using (public.has_role(auth.uid(), 'admin'));
+
+-- Ensure videos bucket exists
+insert into storage.buckets (id, name, public)
+values ('videos', 'videos', true)
+on conflict (id) do nothing;
+
+drop policy if exists "Anyone can read videos bucket" on storage.objects;
+drop policy if exists "Admins can upload videos bucket" on storage.objects;
+drop policy if exists "Admins can delete videos bucket" on storage.objects;
+
+create policy "Anyone can read videos bucket"
+on storage.objects for select
+using (bucket_id = 'videos');
+
+create policy "Admins can upload videos bucket"
+on storage.objects for insert to authenticated
+with check (bucket_id = 'videos' and public.has_role(auth.uid(), 'admin'));
+
+create policy "Admins can delete videos bucket"
+on storage.objects for delete to authenticated
+using (bucket_id = 'videos' and public.has_role(auth.uid(), 'admin'));
