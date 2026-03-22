@@ -19,7 +19,8 @@ export default function Index() {
   const { data: teachers } = useTeachers();
   const { data: achievements } = useAchievements();
 
-  const si = schoolInfo || { name: 'GHS Babi Khel', full_name: '', description: '', total_students: 0, pass_rate: 0, total_teachers: 0, established: 2018 } as any;
+  const si = schoolInfo || { name: 'GHS Babi Khel', full_name: '', description: '', total_students: 0, pass_rate: 0, total_teachers: 0, established_year: 2018 } as any;
+  const establishedYear = si.established_year ?? si.established ?? 2018;
 
   const teacherCount = teachers?.length || si.total_teachers || 0;
 
@@ -27,7 +28,7 @@ export default function Index() {
     { label: 'Students', value: `${si.total_students || 0}+`, icon: Users },
     { label: 'Pass Rate', value: `${si.pass_rate || 0}%`, icon: Award },
     { label: 'Educators', value: `${teacherCount}`, icon: BookOpen },
-    { label: 'Established', value: `${si.established || 2018}`, icon: Clock },
+    { label: 'Established', value: `${establishedYear}`, icon: Clock },
   ];
 
   return (
@@ -36,7 +37,7 @@ export default function Index() {
       <section className="relative overflow-hidden min-h-[75vh] flex items-center">
         {si.banner_url ? (
           <>
-            <img src={si.banner_url} alt="School Banner" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={si.banner_url} alt="School Banner" loading="eager" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/60 to-foreground/30" />
           </>
         ) : (
@@ -46,7 +47,7 @@ export default function Index() {
           <motion.div {...fadeUp} className="max-w-2xl">
             <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium mb-6 ${si.banner_url ? 'bg-primary-foreground/20 text-primary-foreground backdrop-blur-sm' : 'bg-primary/10 text-primary'}`}>
               <GraduationCap className="w-4 h-4" />
-              Est. {si.established || 2018}
+              Est. {establishedYear}
             </span>
             <h1 className={`text-4xl md:text-5xl lg:text-6xl font-display font-extrabold leading-[1.1] mb-6 ${si.banner_url ? 'text-primary-foreground' : 'text-foreground'}`}>
               {si.name}:
@@ -89,7 +90,7 @@ export default function Index() {
           <div className="container-main">
             <motion.div {...fadeUp} className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-8">
               {si.principal_photo_url ? (
-                <img src={si.principal_photo_url} alt="Principal" className="w-32 h-32 rounded-2xl object-cover shadow-lift shrink-0" />
+                <img src={si.principal_photo_url} alt="Principal" loading="lazy" className="w-32 h-32 rounded-2xl object-cover shadow-lift shrink-0" />
               ) : (
                 <div className="w-32 h-32 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
                   <GraduationCap className="w-12 h-12 text-primary" />
@@ -131,7 +132,7 @@ export default function Index() {
             {(notices || []).slice(0, 3).map((notice, i) => (
               <motion.div key={notice.id} {...fadeUp} transition={{ delay: i * 0.1 }} className="card-hover p-6">
                 {notice.image_url && (
-                  <img src={notice.image_url} alt={notice.title} className="w-full h-40 object-cover rounded-lg mb-4" />
+                  <img src={notice.image_url} alt={notice.title} loading="lazy" className="w-full h-40 object-cover rounded-lg mb-4" />
                 )}
                 <div className="flex items-center gap-2 mb-3">
                   <Bell className="w-4 h-4 text-primary" />
@@ -163,7 +164,7 @@ export default function Index() {
             {(news || []).slice(0, 4).map((item, i) => (
               <motion.div key={item.id} {...fadeUp} transition={{ delay: i * 0.1 }} className="card-hover overflow-hidden">
                 {item.image_url && (
-                  <img src={item.image_url} alt={item.title} className="w-full h-48 object-cover" />
+                  <img src={item.image_url} alt={item.title} loading="lazy" className="w-full h-48 object-cover" />
                 )}
                 <div className="p-6">
                   <div className="flex items-center gap-2 mb-3">
@@ -193,7 +194,7 @@ export default function Index() {
             {(teachers || []).slice(0, 4).map((teacher, i) => (
               <motion.div key={teacher.id} {...fadeUp} transition={{ delay: i * 0.1 }} className="card-hover p-6 text-center">
                 {teacher.photo_url ? (
-                  <img src={teacher.photo_url} alt={teacher.name} className="w-16 h-16 rounded-full object-cover mx-auto mb-4" />
+                  <img src={teacher.photo_url} alt={teacher.name} loading="lazy" className="w-16 h-16 rounded-full object-cover mx-auto mb-4" />
                 ) : (
                   <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4 text-lg font-display font-bold">
                     {initials(teacher.name)}
