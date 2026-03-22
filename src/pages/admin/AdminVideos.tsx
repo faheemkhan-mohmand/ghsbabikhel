@@ -15,6 +15,12 @@ function getYoutubeEmbedUrl(url: string) {
   return match ? `https://www.youtube.com/embed/${match[1]}` : null;
 }
 
+const videoCategories: Array<{ label: string; value: 'events' | 'lectures' | 'announcements' }> = [
+  { label: 'Events', value: 'events' },
+  { label: 'Lectures', value: 'lectures' },
+  { label: 'Announcements', value: 'announcements' },
+];
+
 export default function AdminVideos() {
   const { data: videos } = useVideos();
   const { upsert, remove } = useMutateVideo();
