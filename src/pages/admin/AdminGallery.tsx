@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAlbums, useGalleryImages, useMutateAlbum, useMutateGalleryImage, uploadFile, Album } from '@/hooks/useSupabaseData';
@@ -23,6 +23,7 @@ export default function AdminGallery() {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
   const openAdd = () => { setEditing(null); setForm({ name: '', description: '' }); setCoverFile(null); setIsOpen(true); };
   const openEdit = (a: Album) => { setEditing(a); setForm({ name: a.name, description: a.description || '' }); setCoverFile(null); setIsOpen(true); };
@@ -46,13 +47,16 @@ export default function AdminGallery() {
     if (!albumId) return;
     setUploading(true);
     try {
-      for (const file of Array.from(files)) {
-        const url = await uploadFile('gallery', `images/${Date.now()}_${file.name}`, file);
-        await addImage.mutateAsync({ album_id: albumId, image_url: url, caption: file.name });
-      }
+      await Promise.all(
+        Array.from(files).map(async (file) => {
+          const url = await uploadFile('gallery', `albums/${albumId}/images/${Date.now()}_${file.name}`, file);
+          await addImage.mutateAsync({ album_id: albumId, image_url: url, caption: file.name });
+        }),
+      );
       toast.success(`${files.length} image(s) uploaded`);
     } catch (e: any) { toast.error(e.message); }
     setUploading(false);
+    if (uploadInputRef.current) uploadInputRef.current.value = '';
   };
 
   const handleDeleteImage = async (id: string) => {
@@ -71,18 +75,24 @@ export default function AdminGallery() {
             <h1 className="text-2xl font-display font-bold">{album?.name || 'Album'}</h1>
             <p className="text-sm text-muted-foreground">{imgs.length} images</p>
           </div>
-          <label className="cursor-pointer">
-            <Button className="btn-press gap-1 pointer-events-none" disabled={uploading}>
-              <Upload className="w-4 h-4" /> {uploading ? 'Uploading...' : 'Upload Images'}
-            </Button>
-            <input type="file" accept="image/*" multiple className="hidden" onChange={e => e.target.files && handleUploadImages(e.target.files)} />
-          </label>
+          <Button className="btn-press gap-1" disabled={uploading} onClick={() => uploadInputRef.current?.click()}>
+            <Upload className="w-4 h-4" /> {uploading ? 'Uploading...' : 'Upload Images'}
+          </Button>
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={e => e.target.files && handleUploadImages(e.target.files)}
+          />
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {imgs.map((img, i) => (
             <div key={img.id} className="relative group rounded-xl overflow-hidden">
               <img
                 src={img.image_url} alt={img.caption || ''}
+                loading="lazy"
                 className="w-full aspect-square object-cover cursor-pointer hover:scale-105 transition-transform"
                 onClick={() => setLightboxIdx(i)}
               />
@@ -133,7 +143,7 @@ export default function AdminGallery() {
           <div key={album.id} className="card-matte overflow-hidden cursor-pointer" onClick={() => navigate(`/admin/gallery/${album.id}`)}>
             <div className="aspect-video bg-muted flex items-center justify-center">
               {album.cover_image_url ? (
-                <img src={album.cover_image_url} alt={album.name} className="w-full h-full object-cover" />
+                <img src={album.cover_image_url} alt={album.name} loading="lazy" className="w-full h-full object-cover" />
               ) : (
                 <ImageIcon className="w-10 h-10 text-muted-foreground/20" />
               )}
