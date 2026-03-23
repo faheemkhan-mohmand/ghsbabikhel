@@ -16,6 +16,9 @@ import GalleryPage from "./pages/GalleryPage";
 import LibraryPage from "./pages/LibraryPage";
 import AchievementsPage from "./pages/AchievementsPage";
 import VideosPage from "./pages/VideosPage";
+import NotesPage from "./pages/NotesPage";
+import NotesClassPage from "./pages/NotesClassPage";
+import NotesSubjectPage from "./pages/NotesSubjectPage";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import DashboardTimetable from "./pages/dashboard/DashboardTimetable";
@@ -61,6 +64,9 @@ const App = () => (
             <Route path="/library" element={<LibraryPage />} />
             <Route path="/achievements" element={<AchievementsPage />} />
             <Route path="/videos" element={<VideosPage />} />
+            <Route path="/notes" element={<NotesPage />} />
+            <Route path="/notes/class-:classNumber" element={<NotesClassPage />} />
+            <Route path="/notes/class-:classNumber/:subject" element={<NotesSubjectPage />} />
             {/* Auth */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
