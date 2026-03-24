@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Users, Award, BookOpen, GraduationCap, Clock, Bell, Newspaper, Image as ImageIcon, Trophy, Video, Quote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PublicLayout from '@/components/layout/PublicLayout';
+import TypewriterText from '@/components/TypewriterText';
+import FloatingParticles from '@/components/FloatingParticles';
 import { useSchoolInfo, useNotices, useNews, useTeachers, useAchievements, initials } from '@/hooks/useSupabaseData';
 
 const fadeUp = {
@@ -41,8 +43,9 @@ export default function Index() {
             <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/60 to-foreground/30" />
           </>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/30" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/20" />
         )}
+        <FloatingParticles count={8} />
         <div className="container-main relative z-10 section-padding">
           <motion.div {...fadeUp} className="max-w-2xl">
             <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium mb-6 ${si.banner_url ? 'bg-primary-foreground/20 text-primary-foreground backdrop-blur-sm' : 'bg-primary/10 text-primary'}`}>
@@ -50,19 +53,19 @@ export default function Index() {
               Est. {establishedYear}
             </span>
             <h1 className={`text-4xl md:text-5xl lg:text-6xl font-display font-extrabold leading-[1.1] mb-6 ${si.banner_url ? 'text-primary-foreground' : 'text-foreground'}`}>
-              {si.name}:
+              <TypewriterText text={si.name} speed={50} />
               <br />
-              <span className={si.banner_url ? 'text-primary-foreground/90' : 'text-primary'}>Excellence in Education</span>
+              <span className={`${si.banner_url ? 'text-primary-foreground/90' : 'text-primary'}`}>Excellence in Education</span>
             </h1>
             <p className={`text-lg max-w-lg mb-8 leading-relaxed ${si.banner_url ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
               Empowering the next generation with quality education, modern facilities, and dedicated educators.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link to="/results">
-                <Button size="lg" className="btn-press gap-2">View Results <ArrowRight className="w-4 h-4" /></Button>
+                <Button size="lg" className="btn-ocean gap-2">View Results <ArrowRight className="w-4 h-4" /></Button>
               </Link>
               <Link to="/about">
-                <Button size="lg" variant={si.banner_url ? 'secondary' : 'outline'} className="btn-press">Learn More</Button>
+                <Button size="lg" variant={si.banner_url ? 'secondary' : 'outline'} className="btn-press rounded-full">Learn More</Button>
               </Link>
             </div>
           </motion.div>
@@ -70,7 +73,7 @@ export default function Index() {
       </section>
 
       {/* Stats */}
-      <section className="bg-primary text-primary-foreground py-10">
+      <section className="bg-gradient-to-r from-primary to-accent text-primary-foreground py-10">
         <div className="container-main">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, i) => (
@@ -88,7 +91,7 @@ export default function Index() {
       {si.principal_message && (
         <section className="section-padding bg-muted/30">
           <div className="container-main">
-            <motion.div {...fadeUp} className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-8">
+            <motion.div {...fadeUp} className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-8 glass-card p-8">
               {si.principal_photo_url ? (
                 <img src={si.principal_photo_url} alt="Principal" loading="lazy" className="w-32 h-32 rounded-2xl object-cover shadow-lift shrink-0" />
               ) : (
@@ -113,7 +116,7 @@ export default function Index() {
           <motion.div {...fadeUp} className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">About Our School</h2>
             <p className="text-muted-foreground text-lg leading-relaxed mb-8">{si.description}</p>
-            <Link to="/about"><Button variant="outline" className="btn-press gap-2">Read More <ArrowRight className="w-4 h-4" /></Button></Link>
+            <Link to="/about"><Button variant="outline" className="btn-press gap-2 rounded-full">Read More <ArrowRight className="w-4 h-4" /></Button></Link>
           </motion.div>
         </div>
       </section>
@@ -132,7 +135,7 @@ export default function Index() {
             {(notices || []).slice(0, 3).map((notice, i) => (
               <motion.div key={notice.id} {...fadeUp} transition={{ delay: i * 0.1 }} className="card-hover p-6">
                 {notice.image_url && (
-                  <img src={notice.image_url} alt={notice.title} loading="lazy" className="w-full h-40 object-cover rounded-lg mb-4" />
+                  <img src={notice.image_url} alt={notice.title} loading="lazy" className="w-full h-40 object-cover rounded-xl mb-4" />
                 )}
                 <div className="flex items-center gap-2 mb-3">
                   <Bell className="w-4 h-4 text-primary" />
@@ -235,7 +238,7 @@ export default function Index() {
       </section>
 
       {/* Achievements */}
-      <section className="section-padding bg-primary text-primary-foreground">
+      <section className="section-padding bg-gradient-to-r from-primary to-accent text-primary-foreground">
         <div className="container-main">
           <motion.div {...fadeUp} className="text-center mb-10">
             <h2 className="text-3xl font-display font-bold">Our Achievements</h2>
@@ -243,7 +246,7 @@ export default function Index() {
           </motion.div>
           <div className="grid md:grid-cols-3 gap-6">
             {(achievements || []).slice(0, 3).map((a, i) => (
-              <motion.div key={a.id} {...fadeUp} transition={{ delay: i * 0.1 }} className="bg-primary-foreground/10 rounded-xl p-6 border border-primary-foreground/20">
+              <motion.div key={a.id} {...fadeUp} transition={{ delay: i * 0.1 }} className="bg-primary-foreground/10 backdrop-blur-sm rounded-2xl p-6 border border-primary-foreground/20">
                 <Trophy className="w-6 h-6 mb-3 opacity-80" />
                 <h3 className="font-display font-semibold mb-2">{a.title}</h3>
                 <p className="text-sm opacity-80">{a.description}</p>

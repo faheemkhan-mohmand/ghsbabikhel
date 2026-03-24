@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSchoolInfo } from '@/hooks/useSupabaseData';
 import NotificationBell from '@/components/NotificationBell';
+import ThemeToggle from '@/components/ThemeToggle';
 import {
   Calendar, ClipboardList, Newspaper, BookOpen, Image, Trophy, Users,
   BarChart3, Menu, X, GraduationCap, LogOut, Home, ChevronLeft, Video, Settings
@@ -72,28 +73,29 @@ export default function DashboardLayout({ children, isAdmin = false }: Dashboard
             const isActive = location.pathname === link.path || (link.path !== '/admin' && location.pathname.startsWith(link.path));
             return (
               <Link key={link.path} to={link.path} onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}>
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-glow' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}>
                 <link.icon className="w-4 h-4 shrink-0" /><span>{link.name}</span>
               </Link>
             );
           })}
         </nav>
         <div className="p-3 border-t border-sidebar-border space-y-1">
-          <Link to="/" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors">
+          <Link to="/" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors">
             <ChevronLeft className="w-4 h-4" /><span>Back to Website</span>
           </Link>
-          <button onClick={handleSignOut} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors w-full">
+          <button onClick={handleSignOut} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors w-full">
             <LogOut className="w-4 h-4" /><span>Sign Out</span>
           </button>
         </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-background border-b border-border flex items-center px-4 gap-4 shrink-0">
+        <header className="h-16 glass-header flex items-center px-4 gap-4 shrink-0">
           <button className="lg:hidden p-2 -ml-2" onClick={() => setSidebarOpen(true)}><Menu className="w-5 h-5" /></button>
           <div className="flex-1" />
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <NotificationBell />
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-semibold">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground text-xs font-semibold">
               {user?.name?.charAt(0) || 'U'}
             </div>
             <div className="hidden sm:block">

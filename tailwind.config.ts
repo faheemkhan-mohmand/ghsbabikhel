@@ -77,10 +77,13 @@ export default {
         sm: "calc(var(--radius) - 4px)",
         xl: "12px",
         "2xl": "16px",
+        "3xl": "24px",
       },
       boxShadow: {
-        matte: "0 1px 2px 0 rgba(0, 0, 0, 0.05), 0 1px 3px 1px rgba(0, 0, 0, 0.1)",
-        lift: "0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.06)",
+        matte: "0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06)",
+        lift: "0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04)",
+        glow: "0 0 20px rgba(14, 165, 233, 0.15)",
+        "glow-lg": "0 0 40px rgba(14, 165, 233, 0.2)",
       },
       keyframes: {
         "accordion-down": {
@@ -95,11 +98,19 @@ export default {
           from: { opacity: "0", transform: "translateY(10px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        "fade-up": {
+          from: { opacity: "0", transform: "translateY(24px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        shimmer: {
+          "100%": { transform: "translateX(100%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.5s ease-out forwards",
+        "fade-up": "fade-up 0.6s ease-out forwards",
       },
     },
   },
